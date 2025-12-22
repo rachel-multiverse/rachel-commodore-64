@@ -96,6 +96,7 @@ start:
         !source "src/input.asm"
         !source "src/serial.asm"
         !source "src/modem.asm"
+        !source "src/rubp.asm"
 
 ; Clear all buffers to zero
 init_buffers:
