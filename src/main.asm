@@ -49,10 +49,17 @@ start:
         ; Initialize screen (blue background, clear, white text)
         jsr screen_init
 
-        ; Print title using screen module
-        lda #<title_text
+        ; Draw the game screen layout
+        jsr draw_game_screen
+
+        ; Show "waiting" message in status area
+        ldx #1
+        ldy #24
+        clc
+        jsr PLOT
+        lda #<txt_waiting
         sta zp_ptr1
-        lda #>title_text
+        lda #>txt_waiting
         sta zp_ptr1+1
         jsr screen_print
 
@@ -115,13 +122,6 @@ init_buffers:
 ; DATA
 ; =============================================================================
 
-title_text:
-        ; Center the title (40 cols - 15 chars = 25, /2 = 12 spaces)
-        !text "            "
-        !text "RACHEL C64 V1.0"
-        !byte $0d               ; Carriage return
-        !byte $0d
-        !text "       "
-        !text "CONNECTING TO HOST..."
-        !byte $0d
-        !byte $00               ; Null terminator
+txt_waiting:
+        !text "PRESS ANY KEY TO CONNECT..."
+        !byte 0

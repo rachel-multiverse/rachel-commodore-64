@@ -107,3 +107,111 @@ screen_repeat_char:
         dec zp_temp1
         bne -
         rts
+
+; =============================================================================
+; GAME SCREEN LAYOUT
+; =============================================================================
+
+; -----------------------------------------------------------------------------
+; Draw the game title bar (centered at row 0)
+; -----------------------------------------------------------------------------
+draw_title:
+        ldx #12                 ; Column (center "RACHEL V1.0")
+        ldy #0                  ; Row 0
+        clc
+        jsr PLOT
+
+        ldx #0
+-
+        lda txt_title,x
+        beq +
+        jsr CHROUT
+        inx
+        bne -
++
+        rts
+
+txt_title:
+        !text "RACHEL V1.0"
+        !byte 0
+
+; -----------------------------------------------------------------------------
+; Draw the main game frame
+; Uses PETSCII box drawing characters
+; -----------------------------------------------------------------------------
+draw_frame:
+        ; Row 1: Top border (below title)
+        ldx #0
+        ldy #1
+        lda #40
+        jsr screen_hline
+
+        ; Row 4: Below player list
+        ldx #0
+        ldy #4
+        lda #40
+        jsr screen_hline
+
+        ; Row 11: Below discard area
+        ldx #0
+        ldy #11
+        lda #40
+        jsr screen_hline
+
+        ; Row 19: Below hand area
+        ldx #0
+        ldy #19
+        lda #40
+        jsr screen_hline
+
+        ; Row 22: Above status line
+        ldx #0
+        ldy #22
+        lda #40
+        jsr screen_hline
+
+        rts
+
+; -----------------------------------------------------------------------------
+; Draw the complete game screen (title + frame + labels)
+; -----------------------------------------------------------------------------
+draw_game_screen:
+        jsr draw_title
+        jsr draw_frame
+
+        ; "Your hand:" label at row 12
+        ldx #1
+        ldy #12
+        clc
+        jsr PLOT
+        ldx #0
+-
+        lda txt_your_hand,x
+        beq +
+        jsr CHROUT
+        inx
+        bne -
++
+
+        ; Controls hint at row 20
+        ldx #1
+        ldy #20
+        clc
+        jsr PLOT
+        ldx #0
+-
+        lda txt_controls,x
+        beq +
+        jsr CHROUT
+        inx
+        bne -
++
+        rts
+
+txt_your_hand:
+        !text "YOUR HAND:"
+        !byte 0
+
+txt_controls:
+        !raw "<-> MOVE  SPACE SELECT  P PLAY  D DRAW"
+        !byte 0
