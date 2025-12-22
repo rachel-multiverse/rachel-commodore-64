@@ -95,6 +95,7 @@ start:
         !source "src/screen.asm"
         !source "src/input.asm"
         !source "src/serial.asm"
+        !source "src/modem.asm"
 
 ; Clear all buffers to zero
 init_buffers:
