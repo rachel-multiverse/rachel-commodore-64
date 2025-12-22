@@ -5,11 +5,12 @@
 ; Connects to iOS host via Zimodem WiFi bridge.
 
 ; =============================================================================
-; INCLUDES
+; SYMBOL DEFINITIONS (no code, just constants)
 ; =============================================================================
 
         !source "src/zeropage.asm"
         !source "src/buffers.asm"
+        !source "src/screen_defs.asm"
 
 ; =============================================================================
 ; PROGRAM START
@@ -45,28 +46,15 @@ start:
         ; Initialize all buffers
         jsr init_buffers
 
-        ; Set border and background to blue
-        lda #6                  ; Blue
-        sta $d020               ; Border color
-        sta $d021               ; Background color
+        ; Initialize screen (blue background, clear, white text)
+        jsr screen_init
 
-        ; Clear screen (PETSCII code $93)
-        lda #$93
-        jsr $ffd2               ; KERNAL CHROUT
-
-        ; Set text color to white
-        lda #1                  ; White
-        sta $0286               ; Current text color
-
-        ; Print title
-        ldx #0
-.print_title:
-        lda title_text,x
-        beq .title_done
-        jsr $ffd2               ; KERNAL CHROUT
-        inx
-        bne .print_title
-.title_done:
+        ; Print title using screen module
+        lda #<title_text
+        sta zp_ptr1
+        lda #>title_text
+        sta zp_ptr1+1
+        jsr screen_print
 
         ; Re-enable interrupts
         cli
@@ -78,6 +66,8 @@ start:
 ; =============================================================================
 ; SUBROUTINES
 ; =============================================================================
+
+        !source "src/screen.asm"
 
 ; Clear all buffers to zero
 init_buffers:
