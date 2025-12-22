@@ -46,6 +46,9 @@ start:
         ; Initialize all buffers
         jsr init_buffers
 
+        ; Initialize serial port (User Port, 2400 baud)
+        jsr serial_init
+
         ; Initialize screen (blue background, clear, white text)
         jsr screen_init
 
@@ -91,6 +94,7 @@ start:
 
         !source "src/screen.asm"
         !source "src/input.asm"
+        !source "src/serial.asm"
 
 ; Clear all buffers to zero
 init_buffers:
