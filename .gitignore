@@ -1,0 +1,15 @@
+# Build outputs
+build/*.prg
+build/*.txt
+
+# VICE files
+*.vsf
+*.d64
+
+# Editor files
+*.swp
+*~
+.DS_Store
+
+# Keep build directory but not contents
+!build/.gitkeep
