@@ -66,7 +66,22 @@ start:
         ; Re-enable interrupts
         cli
 
-        ; Infinite loop (placeholder for main loop)
+        ; Wait for keypress to "connect"
+        jsr input_wait_key
+
+        ; Show "connecting" message
+        ldx #1
+        ldy #24
+        clc
+        jsr PLOT
+        lda #<txt_connecting
+        sta zp_ptr1
+        lda #>txt_connecting
+        sta zp_ptr1+1
+        jsr screen_print
+
+        ; Placeholder - just loop for now
+        ; (Later: actual connection code here)
 .idle:
         jmp .idle
 
@@ -75,6 +90,7 @@ start:
 ; =============================================================================
 
         !source "src/screen.asm"
+        !source "src/input.asm"
 
 ; Clear all buffers to zero
 init_buffers:
@@ -124,4 +140,8 @@ init_buffers:
 
 txt_waiting:
         !text "PRESS ANY KEY TO CONNECT..."
+        !byte 0
+
+txt_connecting:
+        !text "CONNECTING...               "
         !byte 0
