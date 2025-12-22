@@ -32,6 +32,7 @@ DECK_COUNT      = $03ac         ; 1 byte - cards remaining in deck
 DIRECTION       = $03ad         ; 1 byte - 0=clockwise, 1=counter-clockwise
 GAME_OVER       = $03ae         ; 1 byte - 0=playing, 1=game over
 WINNER_INDEX    = $03af         ; 1 byte - winner player index
+IP_INPUT_BUF    = $03b0         ; 32 bytes - IP address input buffer
 
 ; -----------------------------------------------------------------------------
 ; Buffer Size Constants

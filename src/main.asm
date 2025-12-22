@@ -69,24 +69,31 @@ start:
         ; Re-enable interrupts
         cli
 
-        ; Wait for keypress to "connect"
+        ; Wait for keypress to start
         jsr input_wait_key
 
-        ; Show "connecting" message
-        ldx #1
-        ldy #24
-        clc
-        jsr PLOT
-        lda #<txt_connecting
-        sta zp_ptr1
-        lda #>txt_connecting
-        sta zp_ptr1+1
-        jsr screen_print
+        ; Get IP address from user
+        jsr input_ip_address
+        cmp #0
+        beq start               ; Empty input, restart
 
-        ; Placeholder - just loop for now
-        ; (Later: actual connection code here)
-.idle:
-        jmp .idle
+        ; Attempt connection
+        jsr do_connect
+        cmp #0
+        bne .conn_failed
+
+        ; Wait for game to start
+        jsr wait_for_game
+        cmp #0
+        bne .conn_failed
+
+        ; Game is starting - enter main game loop
+        jmp game_loop
+
+.conn_failed:
+        ; Show error, wait for key, restart
+        jsr input_wait_key
+        jmp start
 
 ; =============================================================================
 ; SUBROUTINES
@@ -98,6 +105,8 @@ start:
         !source "src/modem.asm"
         !source "src/rubp.asm"
         !source "src/game.asm"
+        !source "src/connect.asm"
+        !source "src/loop.asm"
 
 ; Clear all buffers to zero
 init_buffers:
@@ -147,8 +156,4 @@ init_buffers:
 
 txt_waiting:
         !text "PRESS ANY KEY TO CONNECT..."
-        !byte 0
-
-txt_connecting:
-        !text "CONNECTING...               "
         !byte 0

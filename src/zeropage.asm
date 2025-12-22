@@ -63,6 +63,7 @@ zp_color_ptr    = $22           ; $22-$23 - color RAM pointer
 zp_conn_state   = $30
 ; Connection states:
 CONN_DISCONNECTED = 0           ; Not connected
-CONN_CONNECTING   = 1           ; Dialing/handshaking
-CONN_WAITING      = 2           ; Connected, waiting for game
-CONN_IN_GAME      = 3           ; Game in progress
+CONN_DIALING      = 1           ; Sent ATDT, waiting CONNECT
+CONN_HANDSHAKE    = 2           ; TCP connected, sending HELLO
+CONN_WAITING      = 3           ; Got WELCOME, waiting for GAME_START
+CONN_PLAYING      = 4           ; Game in progress

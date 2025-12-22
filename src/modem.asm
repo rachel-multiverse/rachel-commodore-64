@@ -163,44 +163,44 @@ modem_wait_connect:
         sta zp_temp3
         sta zp_temp4
 
-.conn_loop:
+.mwc_loop:
         ; Increment timeout (longer for connect)
         inc zp_temp3
-        bne .conn_no_overflow
+        bne .mwc_no_overflow
         inc zp_temp4
         lda zp_temp4
         cmp #$60                ; Longer timeout for connection (~10 seconds)
-        bcs .conn_timeout
-.conn_no_overflow:
+        bcs .mwc_timeout
+.mwc_no_overflow:
 
         ; Check for data
         jsr serial_available
-        bne .conn_loop
+        bne .mwc_loop
 
         ; Read character
         jsr serial_recv_byte
 
         ; Check for 'C' (start of "CONNECT")
         cmp #'C'
-        beq .conn_success
+        beq .mwc_success
 
         ; Check for 'N' (start of "NO CARRIER")
         cmp #'N'
-        beq .conn_failed
+        beq .mwc_fail
 
-        jmp .conn_loop
+        jmp .mwc_loop
 
-.conn_success:
+.mwc_success:
         ; Drain rest of response line
         jsr modem_drain_line
         lda #0                  ; Connected!
         rts
 
-.conn_failed:
+.mwc_fail:
         lda #1                  ; Failed
         rts
 
-.conn_timeout:
+.mwc_timeout:
         lda #1                  ; Timeout = failed
         rts
 
