@@ -9,6 +9,7 @@
 ; =============================================================================
 
         !source "src/zeropage.asm"
+        !source "src/buffers.asm"
 
 ; =============================================================================
 ; PROGRAM START
@@ -41,6 +42,9 @@ start:
         ; Disable interrupts during setup
         sei
 
+        ; Initialize all buffers
+        jsr init_buffers
+
         ; Set border and background to blue
         lda #6                  ; Blue
         sta $d020               ; Border color
@@ -70,6 +74,52 @@ start:
         ; Infinite loop (placeholder for main loop)
 .idle:
         jmp .idle
+
+; =============================================================================
+; SUBROUTINES
+; =============================================================================
+
+; Clear all buffers to zero
+init_buffers:
+        ; Clear serial buffers ($0200-$02FF)
+        lda #0
+        ldx #0
+.clear_serial:
+        sta SERIAL_RX_BUF,x
+        sta SERIAL_TX_BUF,x
+        sta AT_CMD_BUF,x
+        sta AT_RESP_BUF,x
+        inx
+        cpx #64
+        bne .clear_serial
+
+        ; Clear game state ($0300-$03FF)
+        ldx #0
+.clear_game:
+        sta $0300,x
+        inx
+        bne .clear_game         ; Clears full 256 bytes
+
+        ; Initialize zero page buffer pointers
+        sta zp_rx_head
+        sta zp_rx_tail
+        sta zp_tx_head
+        sta zp_tx_tail
+
+        ; Initialize game state
+        sta zp_hand_count
+        sta zp_cursor_pos
+        sta zp_selected_lo
+        sta zp_selected_hi
+        sta zp_conn_state       ; CONN_DISCONNECTED
+
+        ; Initialize sequence counter to 1
+        lda #1
+        sta zp_sequence
+        lda #0
+        sta zp_sequence+1
+
+        rts
 
 ; =============================================================================
 ; DATA
