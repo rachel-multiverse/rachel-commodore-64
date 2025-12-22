@@ -97,6 +97,7 @@ start:
         !source "src/serial.asm"
         !source "src/modem.asm"
         !source "src/rubp.asm"
+        !source "src/game.asm"
 
 ; Clear all buffers to zero
 init_buffers:
