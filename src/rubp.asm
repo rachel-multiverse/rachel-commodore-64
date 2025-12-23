@@ -46,10 +46,10 @@ HDR_TIMESTAMP   = 12            ; 4 bytes (big-endian)
 PAYLOAD_START   = 16            ; Payload begins here
 
 ; -----------------------------------------------------------------------------
-; Platform ID (C64 = 0x0003)
+; Platform ID (C64 = 0x0002)
 ; -----------------------------------------------------------------------------
 
-PLATFORM_C64    = $0003
+PLATFORM_C64    = $0002
 
 ; =============================================================================
 ; RUBP SUBROUTINES
@@ -199,7 +199,7 @@ rubp_send_hello:
         ; Platform ID at payload+16 (big-endian)
         lda #$00                ; High byte
         sta SERIAL_TX_BUF+PAYLOAD_START+16
-        lda #$03                ; Low byte (C64 = 0x0003)
+        lda #$02                ; Low byte (C64 = 0x0002)
         sta SERIAL_TX_BUF+PAYLOAD_START+17
 
         ; Send message
