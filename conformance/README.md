@@ -26,23 +26,30 @@ non-zero if any **bug** or **unexplained** difference is present.
 
 ## What it covers
 
-Currently the three messages the client **encodes**: `HELLO`, `PLAY_CARD`,
-`DRAW_CARD`. The harness (`encoders.asm`) drives each encoder with the fixture's
-field values and captures the 64-byte `SERIAL_TX_BUF` it builds. (Decoders —
-`WELCOME`, `GAME_STATE`, `GAME_START`/`CARD_DRAWN` — are the next phase: preload
-`SERIAL_RX_BUF` with a fixture and check the parsed-out variables.)
-
-Each differing byte is classified:
+**Encoders** (`encoders.asm`) — the three messages the client builds: `HELLO`,
+`PLAY_CARD`, `DRAW_CARD`. The harness drives each with the fixture's field values
+and captures the 64-byte `SERIAL_TX_BUF` it produces, then diffs against the
+golden vector. Each differing byte is classified:
 
 | Status | Meaning |
 |--------|---------|
-| `OK-PLATFORM` | Legitimate platform-identity difference (e.g. C64 platform ID `0x0002` vs the fixture's iOS `0x0031`) — not a bug |
-| `GAP` | A spec field the client does not yet emit (e.g. `specVersion`, `observedStateHash`) — documented, not yet conformant |
+| `OK-PLATFORM` | Legitimate platform-identity difference (C64 platform ID `0x0002` vs the fixture's iOS `0x0031`) — not a bug |
+| `GAP` | A spec field the client deliberately does not emit (e.g. `reconnectToken` — see decision 0002) — documented |
 | `BUG` | A field the client emits **incorrectly** — fails the run |
 | `UNEXPECTED` | A difference with no explanation on file — fails the run |
 
 The classifications live in the `KNOWN` table in `run.py`; an unexplained change
 in the client's output surfaces as `UNEXPECTED` rather than slipping through.
+
+**Decoders** (`decoders.asm`) — the two parsers with golden vectors:
+`rubp_parse_welcome` and `rubp_parse_game_state`. The harness loads the golden
+vector into `SERIAL_RX_BUF`, runs the parser, and captures every variable it
+writes. `run.py` checks each against the same vector decoded at the **spec's**
+offsets (an independent oracle from PROTOCOL.md) — so a parser reading the wrong
+offset fails, rather than agreeing with a matching mistake. The input vectors are
+generated into `build/vectors.inc` from the JSON each run, so there's no
+hand-transcribed byte to drift. (`GAME_START`/`CARD_DRAWN` have no golden vector
+in the fixture set, so they aren't covered here.)
 
 ## How it works
 
