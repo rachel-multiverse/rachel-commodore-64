@@ -41,22 +41,14 @@ DONE_MARKER = 0xC0FF
 KNOWN = {
     "hello": {
         33: ("OK-PLATFORM", "platform ID 0x0002 (C64) vs fixture's 0x0031 (iOS)"),
-        34: ("GAP", "specVersion high byte not emitted"),
-        35: ("GAP", "specVersion low byte (0x0001) not emitted"),
+        # specVersion (34/35) is now emitted; reconnectToken stays a gap — this
+        # client does not reclaim slots, so it sends a zero token.
         **{o: ("GAP", "reconnectToken not emitted (no reconnect support)") for o in range(36, 44)},
     },
-    "play_card": {
-        50: ("GAP", "specVersion high byte not emitted"),
-        51: ("GAP", "specVersion low byte (0x0001) not emitted"),
-        52: ("GAP", "hash-present/flag byte not emitted"),
-        **{o: ("GAP", "observedStateHash not computed") for o in range(53, 61)},
-    },
-    "draw_card": {
-        18: ("GAP", "specVersion high byte not emitted"),
-        19: ("GAP", "specVersion low byte (0x0001) not emitted"),
-        20: ("GAP", "hash-present/flag byte not emitted"),
-        **{o: ("GAP", "observedStateHash not computed") for o in range(21, 29)},
-    },
+    # play_card and draw_card now emit specVersion + the ObservedStateHash the
+    # client captured from the last GAME_STATE, so they match byte-for-byte.
+    "play_card": {},
+    "draw_card": {},
 }
 
 FAIL_STATUSES = {"BUG", "UNEXPECTED"}

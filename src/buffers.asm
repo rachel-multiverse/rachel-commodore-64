@@ -32,7 +32,12 @@ DECK_COUNT      = $03ac         ; 1 byte - cards remaining in deck
 DIRECTION       = $03ad         ; 1 byte - 0=clockwise, 1=counter-clockwise
 GAME_OVER       = $03ae         ; 1 byte - 0=playing, 1=game over
 WINNER_INDEX    = $03af         ; 1 byte - winner player index
-IP_INPUT_BUF    = $03b0         ; 32 bytes - IP address input buffer
+IP_INPUT_BUF    = $03b0         ; 32 bytes - IP address input buffer ($03b0-$03cf)
+
+; Last authoritative state hash seen in a GAME_STATE, echoed back as the
+; ObservedStateHash in PLAY_CARD / DRAW_CARD so the host can reject stale plays.
+OBSERVED_HASH   = $03d0         ; 8 bytes - raw wire bytes, big-endian as received
+HASH_VALID      = $03d8         ; 1 byte - 1 once a state hash has been captured
 
 ; -----------------------------------------------------------------------------
 ; Buffer Size Constants

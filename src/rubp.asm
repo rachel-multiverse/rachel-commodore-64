@@ -51,6 +51,10 @@ PAYLOAD_START   = 16            ; Payload begins here
 
 PLATFORM_C64    = $0002
 
+; RachelSpec version this client speaks (negotiated via HELLO/WELCOME).
+SPEC_VERSION_HI = $00
+SPEC_VERSION_LO = $01
+
 ; =============================================================================
 ; RUBP SUBROUTINES
 ; =============================================================================
@@ -202,6 +206,12 @@ rubp_send_hello:
         lda #$02                ; Low byte (C64 = 0x0002)
         sta SERIAL_TX_BUF+PAYLOAD_START+17
 
+        ; SpecVersion at payload+18 (big-endian)
+        lda #SPEC_VERSION_HI
+        sta SERIAL_TX_BUF+PAYLOAD_START+18
+        lda #SPEC_VERSION_LO
+        sta SERIAL_TX_BUF+PAYLOAD_START+19
+
         ; Send message
         jmp rubp_send
 
@@ -277,6 +287,21 @@ rubp_parse_game_state:
         lda SERIAL_RX_BUF+PAYLOAD_START+16
         sta WINNER_INDEX
 
+        ; Capture the state hash if present (Flags bit0 at payload+23, hash at
+        ; payload+24..31). We echo it back as ObservedStateHash when we act.
+        lda SERIAL_RX_BUF+PAYLOAD_START+23
+        and #$01
+        beq .gs_no_hash
+        ldx #0
+.gs_copy_hash:
+        lda SERIAL_RX_BUF+PAYLOAD_START+24,x
+        sta OBSERVED_HASH,x
+        inx
+        cpx #8
+        bne .gs_copy_hash
+        lda #1
+        sta HASH_VALID
+.gs_no_hash:
         rts
 
 ; -----------------------------------------------------------------------------
@@ -374,6 +399,16 @@ rubp_send_play_card:
         lda zp_temp2
         sta SERIAL_TX_BUF+PAYLOAD_START+33
 
+        ; SpecVersion at payload+34 (big-endian)
+        lda #SPEC_VERSION_HI
+        sta SERIAL_TX_BUF+PAYLOAD_START+34
+        lda #SPEC_VERSION_LO
+        sta SERIAL_TX_BUF+PAYLOAD_START+35
+
+        ; Flags at payload+36, ObservedStateHash at payload+37..44
+        ldx #36
+        jsr write_obs_hash
+
         ; Send
         jmp rubp_send
 
@@ -397,5 +432,41 @@ rubp_send_draw_card:
         lda #1
         sta SERIAL_TX_BUF+PAYLOAD_START+1
 
+        ; SpecVersion at payload+2 (big-endian)
+        lda #SPEC_VERSION_HI
+        sta SERIAL_TX_BUF+PAYLOAD_START+2
+        lda #SPEC_VERSION_LO
+        sta SERIAL_TX_BUF+PAYLOAD_START+3
+
+        ; Flags at payload+4, ObservedStateHash at payload+5..12
+        ldx #4
+        jsr write_obs_hash
+
         ; Send
         jmp rubp_send
+
+; -----------------------------------------------------------------------------
+; Write the Flags byte + ObservedStateHash into the TX payload.
+; Input: X = payload offset of the Flags byte; the 8-byte hash follows at X+1..X+8
+; If no state hash has been captured yet, the (already-cleared) flag and hash
+; bytes are left at zero — i.e. Flags bit0 = 0, "no hash present".
+; Clobbers: A, X, Y
+; -----------------------------------------------------------------------------
+write_obs_hash:
+        lda HASH_VALID
+        beq .woh_done
+
+        lda #$01                ; Flags bit0 = ObservedStateHash present
+        sta SERIAL_TX_BUF+PAYLOAD_START,x
+
+        ldy #0
+.woh_copy:
+        inx
+        lda OBSERVED_HASH,y
+        sta SERIAL_TX_BUF+PAYLOAD_START,x
+        iny
+        cpy #8
+        bne .woh_copy
+
+.woh_done:
+        rts

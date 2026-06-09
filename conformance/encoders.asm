@@ -110,6 +110,12 @@ test_play_card:
         lda #$02                ; nominated suit = clubs
         sta zp_temp2
 
+        lda #<hash_play         ; observed state hash (as if captured from GAME_STATE)
+        sta zp_ptr1
+        lda #>hash_play
+        sta zp_ptr1+1
+        jsr load_obs_hash
+
         jsr rubp_send_play_card
 
         lda #<CAP_PLAY
@@ -135,6 +141,12 @@ test_draw_card:
         lda #$00
         sta zp_game_id+1
 
+        lda #<hash_draw         ; observed state hash (as if captured from GAME_STATE)
+        sta zp_ptr1
+        lda #>hash_draw
+        sta zp_ptr1+1
+        jsr load_obs_hash
+
         lda #$00                ; reason = CANNOT_PLAY
         jsr rubp_send_draw_card
 
@@ -158,6 +170,22 @@ capture_tx:
         rts
 
 ; -----------------------------------------------------------------------------
+; Load an 8-byte observed state hash from (zp_ptr1) and mark it valid — stands
+; in for parse_game_state having captured it from a GAME_STATE broadcast.
+; -----------------------------------------------------------------------------
+load_obs_hash:
+        ldy #0
+.lh_loop:
+        lda (zp_ptr1),y
+        sta OBSERVED_HASH,y
+        iny
+        cpy #8
+        bne .lh_loop
+        lda #1
+        sta HASH_VALID
+        rts
+
+; -----------------------------------------------------------------------------
 ; Serial stubs — the encoders call these; we don't want real User Port I/O.
 ; -----------------------------------------------------------------------------
 serial_send_byte:
@@ -169,6 +197,12 @@ serial_recv_byte:
 name_alice:
         !text "Alice"
         !byte 0
+
+; Observed-state-hash inputs matching the golden play_card / draw_card fixtures.
+hash_play:
+        !byte $11, $22, $33, $44, $55, $66, $77, $88
+hash_draw:
+        !byte $88, $77, $66, $55, $44, $33, $22, $11
 
 ; -----------------------------------------------------------------------------
 ; The real client codec under test
