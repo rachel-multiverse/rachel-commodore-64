@@ -382,14 +382,15 @@ rubp_send_play_card:
 ; Input: A = reason (0=can't play, 1=attack penalty)
 ; -----------------------------------------------------------------------------
 rubp_send_draw_card:
-        sta zp_temp1            ; Save reason
+        sta zp_temp2            ; Save reason (NOT temp1: build_header clobbers
+                                ; temp1 with the message type)
 
         ; Build header
         lda #MSG_DRAW_CARD
         jsr rubp_build_header
 
         ; Reason at payload+0
-        lda zp_temp1
+        lda zp_temp2
         sta SERIAL_TX_BUF+PAYLOAD_START
 
         ; Count at payload+1 (always 1 for manual draw)
