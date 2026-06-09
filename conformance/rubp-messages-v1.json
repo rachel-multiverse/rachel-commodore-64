@@ -1,0 +1,188 @@
+{
+  "fixture": "rubp-messages-v1",
+  "protocol": "RUBP v1",
+  "description": "Golden 64-byte RUBP message vectors. Generated from the RachelEngine reference encoders and guarded by RUBPProtocolFixtureTests. Any client (vintage or modern) and the server can validate their encoder/decoder against these: build the message with the listed field values, encode it, and the lowercase hex must equal `hex`. All multi-byte values are big-endian; see PROTOCOL.md for byte layouts.",
+  "messages": [
+    {
+      "name": "hello",
+      "type": "HELLO",
+      "type_code": "0x01",
+      "summary": "Client connection / slot claim",
+      "fields": {
+        "playerName": "Alice",
+        "platformID": "0x0031 (iOS)",
+        "specVersion": "0x0001",
+        "sequence": "0x0021",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042",
+        "reconnectToken": "0x0102030405060708"
+      },
+      "hex": "5241434801010021ffff004200000000416c69636500000000000000000000000031000101020304050607080000000000000000000000000000000000000000"
+    },
+    {
+      "name": "welcome",
+      "type": "WELCOME",
+      "type_code": "0x02",
+      "summary": "Host accepts a client and assigns a slot",
+      "fields": {
+        "assignedPlayerID": "0x0001",
+        "playerCount": "3",
+        "gameState": "0x01 (PLAYING)",
+        "specVersion": "0x0001",
+        "sequence": "0x0027",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "5241434801020027ffff004200000000000100420301000100000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "play_card",
+      "type": "PLAY_CARD",
+      "type_code": "0x04",
+      "summary": "Client plays one or more cards",
+      "fields": {
+        "cards": ["A♥ (0x0E)"],
+        "nominatedSuit": "0x02 (clubs)",
+        "specVersion": "0x0001",
+        "observedStateHash": "0x1122334455667788",
+        "sequence": "0x0022",
+        "playerID": "0x0001",
+        "gameID": "0x0042"
+      },
+      "hex": "52414348010400220001004200000000010e00000000000000000000000000000000000000000000000000000000000000020001011122334455667788000000"
+    },
+    {
+      "name": "draw_card",
+      "type": "DRAW_CARD",
+      "type_code": "0x05",
+      "summary": "Client draws",
+      "fields": {
+        "reason": "0 (CANNOT_PLAY)",
+        "count": "1",
+        "specVersion": "0x0001",
+        "observedStateHash": "0x8877665544332211",
+        "sequence": "0x0023",
+        "playerID": "0x0001",
+        "gameID": "0x0042"
+      },
+      "hex": "52414348010500230001004200000000000100010188776655443322110000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "game_state",
+      "type": "GAME_STATE",
+      "type_code": "0x07",
+      "summary": "Public state summary broadcast",
+      "fields": {
+        "currentPlayerIndex": "1",
+        "direction": "1 (counter-clockwise)",
+        "topCard": "J♦ (0x4D)",
+        "nominatedSuit": "0x02 (clubs)",
+        "pendingDraws": "4",
+        "pendingSkips": "1",
+        "deckCount": "12",
+        "discardCount": "3",
+        "playerCardCounts": [5, 1, 0],
+        "playerOutMask": "0x04",
+        "finishOrder": [2],
+        "isGameOver": false,
+        "winnerIndex": "0xFF (none)",
+        "turnNumber": "7",
+        "specVersion": "0x0001",
+        "stateHash": "0xABCDEF0123456789",
+        "sequence": "0x0024",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "5241434801070024ffff00420000000001014b0204010c050100000000000000ff00000007000103abcdef0123456789030402ffffffffffffff000000000000"
+    },
+    {
+      "name": "turn_start",
+      "type": "TURN_START",
+      "type_code": "0x08",
+      "summary": "Notification that a player's turn is starting",
+      "fields": {
+        "playerIndex": "1",
+        "turnNumber": "2",
+        "pendingDraws": "4",
+        "pendingSkips": "1",
+        "specVersion": "0x0001",
+        "stateHash": "0x0102030405060708",
+        "sequence": "0x0028",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "5241434801080028ffff004200000000010000000204010100010102030405060708000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "turn_end",
+      "type": "TURN_END",
+      "type_code": "0x09",
+      "summary": "Public summary of the action that just completed",
+      "fields": {
+        "playerIndex": "1",
+        "actionKind": "0x01 (PLAY)",
+        "cards": ["7♥ (0x07)"],
+        "nominatedSuit": "0xFF (none)",
+        "drawCount": "0",
+        "nextPlayerIndex": "0",
+        "turnNumber": "3",
+        "finishPosition": "0xFF (none)",
+        "winnerIndex": "0xFF (none)",
+        "specVersion": "0x0001",
+        "stateHash": "0x1111222233334444",
+        "sequence": "0x0029",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "5241434801090029ffff00420000000001010107000000ff000000000003ffff0001011111222233334444000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "player_won",
+      "type": "PLAYER_WON",
+      "type_code": "0x0A",
+      "summary": "Game-over notification",
+      "fields": {
+        "winnerIndex": "1",
+        "turnNumber": "9",
+        "specVersion": "0x0001",
+        "stateHash": "0x1111222233334444",
+        "sequence": "0x002A",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "52414348010a002affff004200000000010000000900010111112222333344440000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "hand_sync",
+      "type": "HAND_SYNC",
+      "type_code": "0x0F",
+      "summary": "Private authoritative hand for one player",
+      "fields": {
+        "playerIndex": "1",
+        "cards": ["3♠ (0xC3)", "Q♥ (0x0C)"],
+        "turnNumber": "14",
+        "specVersion": "0x0001",
+        "stateHash": "0x1111222233334444",
+        "sequence": "0x0025",
+        "playerID": "0x0001",
+        "gameID": "0x0042"
+      },
+      "hex": "52414348010f0025000100420000000002c30c0000000000000000000000000000000000000000000000000000000000000000000e0001011111222233334444"
+    },
+    {
+      "name": "sync_request",
+      "type": "SYNC_REQUEST",
+      "type_code": "0x10",
+      "summary": "Client asks the host to resend the authoritative sync pair",
+      "fields": {
+        "turnNumber": "11",
+        "specVersion": "0x0001",
+        "observedStateHash": "0x5555666677778888",
+        "sequence": "0x0026",
+        "playerID": "0x0001",
+        "gameID": "0x0042"
+      },
+      "hex": "524143480110002600010042000000000000000b0001015555666677778888000000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}
