@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """RUBP codec conformance for the C64 client.
 
-Runs the real client codec from src/rubp.asm on a real 6502 under VICE (x64sc,
-headless via the remote monitor) and checks it against the golden fixtures in
+Runs the real client codec from src/rubp.asm on a real C64 under Emu198x
+(emu198x-c64, headless) and checks it against the golden fixtures in
 rubp-messages-v1.json — the same vectors the iOS reference and the Go server
 validate against. No networking, no running game.
 
@@ -18,20 +18,22 @@ Two phases:
 
 Exit status is non-zero on any BUG / UNEXPECTED / decoder mismatch.
 
-Usage:  python3 run.py            (needs: acme, x64sc on PATH)
+Usage:  python3 run.py
+Needs: acme, and emu198x-c64 (set EMU198X_C64, or it defaults to
+       ~/Projects/198x/Emu198x/target/debug/emu198x-c64).
 """
 import json
 import os
-import re
-import socket
 import subprocess
 import sys
-import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, "build")
 FIXTURES = os.path.join(HERE, "rubp-messages-v1.json")
-MON_PORT = 6510
+EMU = os.environ.get(
+    "EMU198X_C64",
+    os.path.expanduser("~/Projects/198x/Emu198x/target/debug/emu198x-c64"),
+)
 
 # ---- Encoder harness (encoders.asm) -----------------------------------------
 ENC_PRG = os.path.join(BUILD, "encoders.prg")
@@ -68,71 +70,48 @@ def assemble(src, prg):
     run(["acme", "-f", "cbm", "-o", prg, src])
 
 
-def mon(sock, line):
-    try:
-        sock.sendall((line + "\n").encode())
-    except OSError:
-        return ""
-    time.sleep(0.2)
-    out = b""
-    sock.settimeout(1.5)
-    try:
-        while True:
-            chunk = sock.recv(8192)
-            if not chunk:
-                break
-            out += chunk
-    except (socket.timeout, OSError):
-        pass
-    return out.decode(errors="replace")
-
-
-def parse_mem(text):
-    by = []
-    for line in text.splitlines():
-        m = re.search(r"C:[0-9a-fA-F]{4}\s+((?:[0-9a-fA-F]{2}\s+)+)", line)
-        if m:
-            by += [int(x, 16) for x in m.group(1).split()]
-    return by
-
-
-def capture(prg, regions, done_addr, boot_delay=6.0):
-    """Run a harness PRG under x64sc and read back memory regions.
+def capture(prg, regions, done_addr):
+    """Run a harness PRG under emu198x-c64 and read back memory regions.
 
     regions: {name: (addr, length)}. Returns {name: [bytes]}.
 
-    The harness must run to completion BEFORE we connect — activating the remote
-    monitor halts the CPU, so we read the parked result, not step it forward.
+    The harness is a BASIC-stub PRG: --load imports it, the script types RUN to
+    SYS into the machine code (the C64 keyboard scan needs a key held across a
+    few frames, hence the press / run / release rhythm), it runs every test into
+    the capture region and parks, and memory_read pulls each region back.
     """
-    subprocess.run(["pkill", "-f", "x64sc"], cwd=HERE)
-    time.sleep(0.3)
-    emu = subprocess.Popen(
-        ["x64sc", "-console", "-warp", "-remotemonitor",
-         "-remotemonitoraddress", f"ip4://127.0.0.1:{MON_PORT}",
-         "-autostart", prg],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    try:
-        time.sleep(boot_delay)
-        sock = None
-        for _ in range(10):
-            try:
-                sock = socket.create_connection(("127.0.0.1", MON_PORT), timeout=2)
-                break
-            except OSError:
-                time.sleep(0.5)
-        if sock is None:
-            raise RuntimeError("could not reach x64sc remote monitor")
-        if parse_mem(mon(sock, f"m {done_addr:04x} {done_addr:04x}"))[:1] != [0xAA]:
-            raise RuntimeError("harness did not finish (try a longer boot_delay)")
-        out = {}
-        for name, (addr, length) in regions.items():
-            out[name] = parse_mem(mon(sock, f"m {addr:04x} {addr + length - 1:04x}"))[:length]
-        mon(sock, "quit")
-        return out
-    finally:
-        emu.terminate()
-        subprocess.run(["pkill", "-f", "x64sc"], cwd=HERE)
+    if not os.path.exists(EMU):
+        sys.exit(f"emu198x-c64 not found at {EMU}\n"
+                 f"build it: cargo build -p emu198x-c64 --no-default-features")
+    steps = [{"action": "wait_for_boot", "max_frames": 400}]
+    for key in ("r", "u", "n", "return"):
+        steps += [
+            {"action": "input", "events": [{"Key": {"name": key, "pressed": True}}]},
+            {"action": "run_frames", "frames": 4},
+            {"action": "input", "events": [{"Key": {"name": key, "pressed": False}}]},
+            {"action": "run_frames", "frames": 4},
+        ]
+    steps.append({"action": "run_frames", "frames": 60})
+    steps.append({"action": "memory_read", "addr": done_addr, "len": 1})
+    for addr, length in regions.values():
+        steps.append({"action": "memory_read", "addr": addr, "len": length})
+
+    script = os.path.join(BUILD, "session.json")
+    with open(script, "w") as f:
+        json.dump(steps, f)
+
+    out = subprocess.run(
+        [EMU, "--headless", "--load", prg, "--script", script],
+        cwd=HERE, check=True, capture_output=True, text=True,
+    ).stdout
+    reads = {}
+    for o in json.loads(out).get("observations", []):
+        if o.get("kind") == "memory_read":
+            reads[o["addr"]] = bytes(o["bytes"])
+
+    if reads.get(done_addr, b"\0")[:1] != b"\xaa":
+        raise RuntimeError("harness did not finish (done marker not set) — try more run_frames")
+    return {name: list(reads[addr]) for name, (addr, _length) in regions.items()}
 
 
 def golden(fixtures, name):

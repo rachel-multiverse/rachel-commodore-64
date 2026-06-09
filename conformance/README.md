@@ -3,13 +3,13 @@
 Offline checks that the C64 client's RUBP codec produces and reads bytes exactly
 as the protocol specifies — **no networking, no emulator-of-the-server, no
 running game required**. It runs the *real* client routines from `../src/rubp.asm`
-on a real 6502 (under VICE) and diffs the bytes against the golden fixtures in
-`rubp-messages-v1.json` — the same vectors the iOS reference and the Go server
-validate against.
+on a real C64 (under Emu198x, headless) and diffs the bytes against the golden
+fixtures in `rubp-messages-v1.json` — the same vectors the iOS reference and the
+Go server validate against.
 
 This isolates *codec correctness* from *networking*: if a message is built or
-parsed wrong, it fails here in seconds, instead of being discovered mid-game in
-VICE where you can't tell whether the codec or the serial path is at fault.
+parsed wrong, it fails here in seconds, instead of being discovered mid-game
+where you can't tell whether the codec or the serial path is at fault.
 
 ## Run it
 
@@ -18,11 +18,21 @@ cd conformance
 python3 run.py
 ```
 
-Requirements (both already used by this project): **acme** to assemble and
-**x64sc** (VICE) on your `PATH`. `run.py` assembles the harness, boots it under
-x64sc headless (`-console -warp`), drives the remote monitor to read back the
-captured messages, and prints a per-message, per-byte verdict. Exit status is
-non-zero if any **bug** or **unexplained** difference is present.
+Requirements:
+
+- **acme** (the client's own assembler) on your `PATH`.
+- **emu198x-c64**, the headless C64 runner from the Emu198x project. Build it
+  once with `cargo build -p emu198x-c64 --no-default-features`, then either put
+  it on `PATH` or point `EMU198X_C64` at the binary. The default is
+  `~/Projects/198x/Emu198x/target/debug/emu198x-c64`. It auto-discovers the C64
+  ROMs from `~/.emu198x/roms/commodore-c64`.
+
+`run.py` assembles each harness PRG (`acme`), `--load`s it under Emu198x headless,
+types `RUN` to start it, `memory_read`s the capture region back as JSON, and
+prints a per-message, per-byte verdict. Exit status is non-zero if any **bug** or
+**unexplained** difference is present. (This is the same `memory_read` /
+golden-fixture pattern the ZX Spectrum harness uses — only the assembler and the
+Emu198x binary differ.)
 
 ## What it covers
 
@@ -53,10 +63,11 @@ in the fixture set, so they aren't covered here.)
 
 ## How it works
 
-`run.py` runs the program to completion **before** connecting the remote monitor:
-activating the monitor halts the CPU, so the harness must already have parked in
-its final `jmp *` loop with results in the capture region (`$C000`+). The
-encoders normally end by streaming `SERIAL_TX_BUF` out through `serial_send_byte`;
-the harness stubs that (and `serial_recv_byte`) to `rts` so nothing touches the
-User Port — the built message still sits in `SERIAL_TX_BUF`, which is what we copy
-out.
+Each harness is a BASIC-stub PRG. `run.py` `--load`s it, types `RUN` (the C64
+keyboard scan needs each key held across a few frames, hence the press/run/release
+rhythm in the script), and the stub `SYS`es into the machine code, which runs
+every test into the capture region (`$C000`+), sets a done marker, and parks in
+its `jmp *` loop. `memory_read` then pulls each region back. The encoders normally
+end by streaming `SERIAL_TX_BUF` out through `serial_send_byte`; the harness stubs
+that (and `serial_recv_byte`) to `rts` so nothing touches the User Port — the
+built message still sits in `SERIAL_TX_BUF`, which is what we read.
