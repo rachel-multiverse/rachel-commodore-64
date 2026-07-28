@@ -59,7 +59,7 @@ build/
 
 ## Protocol
 
-See [RUBP Protocol Specification](../docs/PROTOCOL.md) for the binary protocol used for multiplayer communication.
+See the [RUBP Protocol Specification](https://github.com/rachel-multiverse/protocol/blob/main/PROTOCOL.md) for the binary protocol used for multiplayer communication.
 
 ## License
 
