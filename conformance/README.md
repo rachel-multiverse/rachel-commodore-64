@@ -4,8 +4,15 @@ Offline checks that the C64 client's RUBP codec produces and reads bytes exactly
 as the protocol specifies — **no networking, no emulator-of-the-server, no
 running game required**. It runs the *real* client routines from `../src/rubp.asm`
 on a real C64 (under Emu198x, headless) and diffs the bytes against the golden
-fixtures in `rubp-messages-v1.json` — the same vectors the iOS reference and the
-Go server validate against.
+fixtures in `rubp-messages-v1.json`.
+
+Those vectors are shared, and the canonical copy lives in
+[rachel-multiverse/protocol](https://github.com/rachel-multiverse/protocol).
+They are vendored here rather than fetched, so this stays runnable offline —
+and pinned in `rubp-messages-v1.sha256`, which `run.py` checks before it does
+anything else. Edit the JSON and the harness refuses to run; the fix is
+`./refresh-vectors.sh`, not a local edit. A client's private idea of the wire
+format is the one bug this harness cannot catch.
 
 This isolates *codec correctness* from *networking*: if a message is built or
 parsed wrong, it fails here in seconds, instead of being discovered mid-game

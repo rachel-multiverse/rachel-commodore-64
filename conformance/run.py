@@ -22,6 +22,7 @@ Usage:  python3 run.py
 Needs: acme, and emu198x-c64 (set EMU198X_C64, or it defaults to
        ~/Projects/198x/Emu198x/target/debug/emu198x-c64).
 """
+import hashlib
 import json
 import os
 import subprocess
@@ -30,6 +31,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 BUILD = os.path.join(HERE, "build")
 FIXTURES = os.path.join(HERE, "rubp-messages-v1.json")
+FIXTURES_SHA = os.path.join(HERE, "rubp-messages-v1.sha256")
 EMU = os.environ.get(
     "EMU198X_C64",
     os.path.expanduser("~/Projects/198x/Emu198x/target/debug/emu198x-c64"),
@@ -226,7 +228,38 @@ def check_decoders(fixtures):
     return failed
 
 
+def check_fixtures_pinned():
+    """Refuse to run against vectors that no longer match the ones we pinned.
+
+    The vectors are vendored rather than fetched, because this harness runs
+    offline by design and a fresh clone has to work without a network. The
+    price of vendoring is a copy that can quietly stop matching its source -
+    four copies of this file exist across the project - so the hash beside it
+    is checked before anything else.
+
+    This catches local edits. It cannot tell you the *upstream* file has moved
+    on; no offline check can. `./refresh-vectors.sh` is how you find that out.
+    """
+    if not os.path.exists(FIXTURES_SHA):
+        return
+    want = open(FIXTURES_SHA).read().split()[0]
+    got = hashlib.sha256(open(FIXTURES, "rb").read()).hexdigest()
+    if got != want:
+        print("FIXTURES DO NOT MATCH THE PINNED HASH", file=sys.stderr)
+        print(f"  expected {want}", file=sys.stderr)
+        print(f"  found    {got}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("rubp-messages-v1.json has been edited since it was pinned.", file=sys.stderr)
+        print("These vectors are shared - the canonical copy lives at", file=sys.stderr)
+        print("  https://github.com/rachel-multiverse/protocol", file=sys.stderr)
+        print("Run ./refresh-vectors.sh to pull it and re-pin, or restore the", file=sys.stderr)
+        print("file. Do not edit it here: a client's private idea of the wire", file=sys.stderr)
+        print("format is the one bug this harness cannot catch.", file=sys.stderr)
+        sys.exit(2)
+
+
 def main():
+    check_fixtures_pinned()
     fixtures = json.load(open(FIXTURES))
     print(f"RUBP codec conformance — C64 client vs {fixtures['fixture']}\n")
     failed = check_encoders(fixtures)
