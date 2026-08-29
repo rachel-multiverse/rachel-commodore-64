@@ -69,6 +69,10 @@ serial_init:
 ; Start bit = low, Stop bit = high
 ; -----------------------------------------------------------------------------
 serial_send_byte:
+        txa
+        pha
+        tya
+        pha
         sei                     ; Disable interrupts for timing
         sta zp_temp1            ; Save byte to send
         ldx #8                  ; 8 data bits
@@ -101,6 +105,10 @@ serial_send_byte:
         jsr serial_bit_delay
 
         cli                     ; Re-enable interrupts
+        pla
+        tay
+        pla
+        tax
         rts
 
 ; -----------------------------------------------------------------------------
@@ -111,6 +119,10 @@ serial_send_byte:
 ; Waits for start bit, then samples 8 data bits in the middle of each
 ; -----------------------------------------------------------------------------
 serial_recv_byte:
+        txa
+        pha
+        tya
+        pha
         sei                     ; Disable interrupts for timing
         lda #0
         sta zp_temp1            ; Clear result
@@ -143,7 +155,13 @@ serial_recv_byte:
         jsr serial_bit_delay
 
         cli                     ; Re-enable interrupts
-        lda zp_temp1            ; Return received byte
+        lda zp_temp1
+        sta zp_temp2
+        pla
+        tay
+        pla
+        tax
+        lda zp_temp2            ; Return received byte
         rts
 
 ; -----------------------------------------------------------------------------

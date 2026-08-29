@@ -177,8 +177,8 @@ do_connect:
         ; Parse WELCOME
         jsr rubp_parse_welcome
 
-        ; Extract my player index from WELCOME
-        lda SERIAL_RX_BUF+PAYLOAD_START+5  ; Player index at payload+5
+        ; Assigned player IDs are the canonical seat indices (0-7).
+        lda zp_player_id
         sta zp_my_index
 
         ; Update state

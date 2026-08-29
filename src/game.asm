@@ -98,9 +98,6 @@ draw_hand:
 
         ; Print each card
         ldx #0                  ; Card index
-        lda #1                  ; Selection bitmask
-        sta zp_temp3
-
 .card_loop:
         cpx zp_hand_count
         beq .hand_done
@@ -115,8 +112,7 @@ draw_hand:
 .not_cursor:
 
         ; Check if selected
-        lda zp_temp3
-        and zp_selected_lo
+        lda SELECTED_CARDS,x
         beq .dh_not_sel
 
         ; Selected - print opening bracket
@@ -134,8 +130,8 @@ draw_hand:
         jsr print_card
 
         ; Closing bracket if selected
-        lda zp_temp3
-        and zp_selected_lo
+        ldx zp_temp4
+        lda SELECTED_CARDS,x
         beq .dh_no_close
         lda #'<'
         jsr CHROUT
@@ -152,13 +148,6 @@ draw_hand:
         ; Next card
         ldx zp_temp4
         inx
-
-        ; Shift selection mask
-        asl zp_temp3
-        bne .check_wrap
-        lda #1
-        sta zp_temp3
-.check_wrap:
 
         ; Check for row wrap (6 cards per row)
         txa

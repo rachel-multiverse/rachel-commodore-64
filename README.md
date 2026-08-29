@@ -27,6 +27,11 @@ make conformance # Run RUBP codec checks under Emu198x
 make clean      # Remove build artifacts
 ```
 
+Runtime buffers live in free RAM at `$C100-$C2FF`; the KERNAL vectors and
+cassette workspace in page `$03` are left untouched. All 32 possible hand
+slots can be selected, and private hand state is reconciled through
+`GAME_START`, `CARD_DRAWN`, and `HAND_SYNC`.
+
 ## Running in VICE
 
 ```bash

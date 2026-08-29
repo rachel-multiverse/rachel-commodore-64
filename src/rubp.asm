@@ -31,6 +31,10 @@ MSG_TURN_END    = $09
 MSG_PLAYER_WON  = $0a
 MSG_ERROR       = $0b
 MSG_PLAYER_LIST = $0c
+MSG_ANNOUNCE    = $0d
+MSG_PLAYER_NAME = $0e
+MSG_HAND_SYNC   = $0f
+MSG_SYNC_REQUEST= $10
 
 ; -----------------------------------------------------------------------------
 ; Header Offsets
@@ -163,6 +167,9 @@ rubp_validate:
         bne .invalid
         lda SERIAL_RX_BUF+HDR_MAGIC+3
         cmp #'H'
+        bne .invalid
+        lda SERIAL_RX_BUF+HDR_VERSION
+        cmp #$01
         bne .invalid
 
         lda #0                  ; Valid - set Z flag
@@ -301,7 +308,11 @@ rubp_parse_game_state:
         bne .gs_copy_hash
         lda #1
         sta HASH_VALID
+        jmp .gs_done
 .gs_no_hash:
+        lda #0
+        sta HASH_VALID
+.gs_done:
         rts
 
 ; -----------------------------------------------------------------------------
@@ -333,12 +344,13 @@ rubp_parse_cards:
 .copy_cards:
         cpy zp_temp2
         beq .copy_done
+        cpx #MAX_HAND_SIZE
+        beq .copy_done
         lda SERIAL_RX_BUF+PAYLOAD_START+1,y  ; Cards start at payload+1
         sta MY_HAND,x
         inx
         iny
-        cpx #MAX_HAND_SIZE
-        bne .copy_cards
+        jmp .copy_cards
 
 .copy_done:
         stx zp_hand_count       ; Update hand count
@@ -355,7 +367,7 @@ rubp_parse_card_drawn:
 
 ; -----------------------------------------------------------------------------
 ; Build and send PLAY_CARD message
-; Plays cards marked in selection bitmask
+; Plays cards marked in the 32-byte selection table
 ; Input: zp_temp2 = nominated suit ($FF if none)
 ; -----------------------------------------------------------------------------
 rubp_send_play_card:
@@ -366,14 +378,11 @@ rubp_send_play_card:
         ; Count selected cards and copy to payload
         ldx #0                  ; Source index in hand
         ldy #0                  ; Dest index in payload (cards at +1)
-        lda #1                  ; Bit mask for selection
-
 .check_loop:
         cpx zp_hand_count
         beq .count_done
 
-        pha                     ; Save bit mask
-        and zp_selected_lo      ; Check if selected (first 8 cards)
+        lda SELECTED_CARDS,x
         beq .not_selected
 
         ; Card is selected - copy it
@@ -382,10 +391,6 @@ rubp_send_play_card:
         iny
 
 .not_selected:
-        pla                     ; Restore mask
-        asl                     ; Next bit
-        bne .next_card
-        lda #1                  ; Wrap (shouldn't happen with <8 selected)
 .next_card:
         inx
         bne .check_loop

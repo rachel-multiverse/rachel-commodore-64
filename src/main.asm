@@ -110,7 +110,7 @@ start:
 
 ; Clear all buffers to zero
 init_buffers:
-        ; Clear serial buffers ($0200-$02FF)
+        ; Clear serial buffers ($C100-$C1FF)
         lda #0
         ldx #0
 .clear_serial:
@@ -122,10 +122,10 @@ init_buffers:
         cpx #64
         bne .clear_serial
 
-        ; Clear game state ($0300-$03FF)
+        ; Clear application game state ($C200-$C2FF), never KERNAL page $03.
         ldx #0
 .clear_game:
-        sta $0300,x
+        sta $c200,x
         inx
         bne .clear_game         ; Clears full 256 bytes
 
@@ -138,8 +138,6 @@ init_buffers:
         ; Initialize game state
         sta zp_hand_count
         sta zp_cursor_pos
-        sta zp_selected_lo
-        sta zp_selected_hi
         sta zp_conn_state       ; CONN_DISCONNECTED
 
         ; Initialize sequence counter to 1

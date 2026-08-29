@@ -105,8 +105,8 @@ test_play_card:
         sta MY_HAND
         lda #1
         sta zp_hand_count
-        lda #$01                ; select card 0 (bit 0)
-        sta zp_selected_lo
+        lda #$01                ; select card 0
+        sta SELECTED_CARDS
         lda #$02                ; nominated suit = clubs
         sta zp_temp2
 

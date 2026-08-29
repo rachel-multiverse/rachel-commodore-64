@@ -49,6 +49,9 @@ check_network:
         cmp #MSG_CARD_DRAWN
         beq .cn_card_drawn
 
+        cmp #MSG_HAND_SYNC
+        beq .cn_hand_sync
+
         cmp #MSG_TURN_START
         beq .cn_turn_start
 
@@ -69,6 +72,11 @@ check_network:
 
 .cn_card_drawn:
         jsr rubp_parse_card_drawn
+        jsr draw_hand
+        rts
+
+.cn_hand_sync:
+        jsr rubp_parse_game_start
         jsr draw_hand
         rts
 
@@ -149,19 +157,9 @@ check_input:
 .ci_select:
         ; Toggle selection of current card
         ldx zp_cursor_pos
-        cpx #8                  ; Only support first 8 cards for selection
-        bcs .ci_update_hand
-
-        ; Create bit mask for position
         lda #1
--       dex
-        bmi .ci_toggle
-        asl
-        bne -
-
-.ci_toggle:
-        eor zp_selected_lo      ; Toggle bit
-        sta zp_selected_lo
+        eor SELECTED_CARDS,x
+        sta SELECTED_CARDS,x
 
 .ci_update_hand:
         jsr draw_hand
@@ -169,8 +167,8 @@ check_input:
 
 .ci_play:
         ; Check if any cards selected
-        lda zp_selected_lo
-        beq .ci_done            ; Nothing selected
+        jsr count_selected_cards
+        beq .ci_done
 
         ; Check if playing 8 - need to nominate suit
         jsr check_for_eight
@@ -188,9 +186,7 @@ check_input:
         jsr rubp_send_play_card
 
         ; Clear selection
-        lda #0
-        sta zp_selected_lo
-        sta zp_selected_hi
+        jsr clear_selected_cards
         jsr draw_hand
         rts
 
@@ -199,9 +195,7 @@ check_input:
         jsr rubp_send_play_card
 
         ; Clear selection
-        lda #0
-        sta zp_selected_lo
-        sta zp_selected_hi
+        jsr clear_selected_cards
         jsr draw_hand
         rts
 
@@ -217,16 +211,13 @@ check_input:
 ; -----------------------------------------------------------------------------
 check_for_eight:
         ldx #0
-        lda #1                  ; Bit mask
-        sta zp_temp1
 
 .cfe_loop:
         cpx zp_hand_count
         beq .cfe_none
 
         ; Check if this card is selected
-        lda zp_temp1
-        and zp_selected_lo
+        lda SELECTED_CARDS,x
         beq .cfe_next
 
         ; Selected - check if it's an Ace (rank 14)
@@ -236,9 +227,7 @@ check_for_eight:
         beq .cfe_found
 
 .cfe_next:
-        asl zp_temp1
         inx
-        cpx #8
         bne .cfe_loop
 
 .cfe_none:
@@ -247,6 +236,32 @@ check_for_eight:
 
 .cfe_found:
         lda #1
+        rts
+
+count_selected_cards:
+        lda #0
+        sta zp_temp1
+        ldx #0
+.csc_loop:
+        cpx zp_hand_count
+        beq .csc_done
+        lda SELECTED_CARDS,x
+        beq .csc_next
+        inc zp_temp1
+.csc_next:
+        inx
+        bne .csc_loop
+.csc_done:
+        lda zp_temp1
+        rts
+
+clear_selected_cards:
+        ldx #31
+        lda #0
+.clear_loop:
+        sta SELECTED_CARDS,x
+        dex
+        bpl .clear_loop
         rts
 
 ; -----------------------------------------------------------------------------

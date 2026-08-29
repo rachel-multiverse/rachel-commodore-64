@@ -1,43 +1,44 @@
 ; =============================================================================
 ; FIXED MEMORY BUFFERS - DEFINITIONS ONLY
 ; =============================================================================
-; Buffer locations in low RAM ($0200-$03FF)
-; This area is safe to use on C64 (not used by BASIC/KERNAL)
+; Buffer locations in free RAM ($C100-$C2FF). Page $03 is not application
+; scratch space on a C64: it contains KERNAL vectors and the cassette buffer.
 ;
 ; NOTE: This file contains only symbol definitions (no code).
 ; The init_buffers routine is in main.asm after the program counter is set.
 
 ; -----------------------------------------------------------------------------
-; Serial Buffers ($0200-$02FF)
+; Serial Buffers ($C100-$C1FF)
 ; -----------------------------------------------------------------------------
 ; 64-byte buffers for RUBP messages (matches protocol message size)
 
-SERIAL_RX_BUF   = $0200         ; 64 bytes - receive buffer for incoming msg
-SERIAL_TX_BUF   = $0240         ; 64 bytes - transmit buffer for outgoing msg
-AT_CMD_BUF      = $0280         ; 64 bytes - AT command assembly
-AT_RESP_BUF     = $02c0         ; 64 bytes - AT response parsing
+SERIAL_RX_BUF   = $c100
+SERIAL_TX_BUF   = $c140
+AT_CMD_BUF      = $c180
+AT_RESP_BUF     = $c1c0
 
 ; -----------------------------------------------------------------------------
-; Game State Buffers ($0300-$03FF)
+; Game State Buffers ($C200-$C2FF)
 ; -----------------------------------------------------------------------------
 
-PLAYER_NAMES    = $0300         ; 8 players x 16 chars = 128 bytes ($0300-$037F)
-PLAYER_COUNTS   = $0380         ; 8 bytes - card count per player
-MY_HAND         = $0388         ; 32 bytes - our hand (max 32 cards)
-DISCARD_TOP     = $03a8         ; 1 byte - top card of discard pile
-NOMINATED_SUIT  = $03a9         ; 1 byte - nominated suit (0-3 or $FF=none)
-PENDING_DRAWS   = $03aa         ; 1 byte - cards we must draw (attack)
-PENDING_SKIPS   = $03ab         ; 1 byte - skips pending
-DECK_COUNT      = $03ac         ; 1 byte - cards remaining in deck
-DIRECTION       = $03ad         ; 1 byte - 0=clockwise, 1=counter-clockwise
-GAME_OVER       = $03ae         ; 1 byte - 0=playing, 1=game over
-WINNER_INDEX    = $03af         ; 1 byte - winner player index
-IP_INPUT_BUF    = $03b0         ; 32 bytes - IP address input buffer ($03b0-$03cf)
+PLAYER_NAMES    = $c200
+PLAYER_COUNTS   = $c280
+MY_HAND         = $c288
+DISCARD_TOP     = $c2a8
+NOMINATED_SUIT  = $c2a9
+PENDING_DRAWS   = $c2aa
+PENDING_SKIPS   = $c2ab
+DECK_COUNT      = $c2ac
+DIRECTION       = $c2ad
+GAME_OVER       = $c2ae
+WINNER_INDEX    = $c2af
+IP_INPUT_BUF    = $c2b0
 
 ; Last authoritative state hash seen in a GAME_STATE, echoed back as the
 ; ObservedStateHash in PLAY_CARD / DRAW_CARD so the host can reject stale plays.
-OBSERVED_HASH   = $03d0         ; 8 bytes - raw wire bytes, big-endian as received
-HASH_VALID      = $03d8         ; 1 byte - 1 once a state hash has been captured
+OBSERVED_HASH   = $c2d0
+HASH_VALID      = $c2d8
+SELECTED_CARDS  = $c2d9         ; 32 one-byte booleans, cards 0-31
 
 ; -----------------------------------------------------------------------------
 ; Buffer Size Constants

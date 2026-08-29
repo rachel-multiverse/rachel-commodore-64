@@ -41,13 +41,11 @@ zp_my_index     = $16           ; Our player index in game (0-7)
 zp_current_turn = $17           ; Whose turn it is (0-7)
 
 ; -----------------------------------------------------------------------------
-; Hand State ($18-$1B)
+; Hand State ($18-$19)
 ; -----------------------------------------------------------------------------
 ; Player's card hand management
 zp_hand_count   = $18           ; Number of cards in our hand (0-32)
 zp_cursor_pos   = $19           ; Cursor position in hand (0-31)
-zp_selected_lo  = $1a           ; Selection bitmask low byte (cards 0-7)
-zp_selected_hi  = $1b           ; Selection bitmask high byte (cards 8-15)
 
 ; -----------------------------------------------------------------------------
 ; Screen State ($20-$23)
