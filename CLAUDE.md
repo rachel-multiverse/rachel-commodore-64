@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-Rachel C64 is a Commodore 64 client for the Rachel card game, written in 6502 assembly using the ACME assembler. It connects to an iOS/macOS host via WiFi bridge (Zimodem) using the RUBP binary protocol.
+Rachel C64 is a Commodore 64 client for the Rachel card game, written in ACME-compatible 6502 assembly and built with Asm198x. It connects to an iOS/macOS host via WiFi bridge (Zimodem) using the RUBP binary protocol.
 
 ## Build Commands
 
@@ -41,7 +41,7 @@ This is a **render-only client** - all game logic runs on the iOS host. The C64:
 | `src/input.asm` | Keyboard scanning and input |
 | `src/game.asm` | Game state, hand management |
 
-## ACME Assembler Notes
+## ACME-compatible Asm198x Notes
 
 - No powerful macros - explicit code is intentional
 - Use `!byte`, `!word`, `!text` for data
@@ -83,6 +83,6 @@ This connects directly to an iOS host's TCP listener on port 19840.
 
 ## Related Documentation
 
-- `../docs/PROTOCOL.md` - RUBP binary protocol specification
+- `../protocol/PROTOCOL.md` - canonical RUBP binary protocol specification
 - `../docs/GAME_RULES.md` - Rachel card game rules
 - `../rachel-ios/docs/plans/2025-12-22-rachel-c64-design.md` - Design document

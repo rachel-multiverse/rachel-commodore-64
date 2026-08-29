@@ -257,10 +257,14 @@ draw_discard:
 suit_names:
         !word txt_hearts, txt_diamonds, txt_clubs, txt_spades
 
-txt_hearts:   !text "HEARTS" : !byte 0
-txt_diamonds: !text "DIAMONDS" : !byte 0
-txt_clubs:    !text "CLUBS" : !byte 0
-txt_spades:   !text "SPADES" : !byte 0
+txt_hearts:   !text "HEARTS"
+              !byte 0
+txt_diamonds: !text "DIAMONDS"
+              !byte 0
+txt_clubs:    !text "CLUBS"
+              !byte 0
+txt_spades:   !text "SPADES"
+              !byte 0
 
 ; -----------------------------------------------------------------------------
 ; Draw player list (rows 2-3)

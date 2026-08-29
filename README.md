@@ -1,25 +1,29 @@
 # Rachel C64
 
+[![C64 CI](https://github.com/rachel-multiverse/rachel-commodore-64/actions/workflows/ci.yml/badge.svg)](https://github.com/rachel-multiverse/rachel-commodore-64/actions/workflows/ci.yml)
+
 Commodore 64 client for the Rachel card game, written in 6502 assembly.
 
 Connects to an iOS/macOS host via WiFi bridge using the RUBP (Rachel Unified Binary Protocol).
 
 ## Requirements
 
-- [ACME Cross-Assembler](https://sourceforge.net/projects/acme-crossass/)
+- [Asm198x](https://github.com/asm198x/asm198x)
+- ACME Cross-Assembler (optional byte-parity oracle)
 - [VICE Emulator](https://vice-emu.sourceforge.io/) (for testing)
 - Zimodem-compatible WiFi modem (for real hardware)
 
 ### macOS Installation
 
 ```bash
-brew install acme vice
+brew install asm198x/tap/asm198x acme vice
 ```
 
 ## Building
 
 ```bash
 make            # Build rachel.prg
+make conformance # Run RUBP codec checks under Emu198x
 make clean      # Remove build artifacts
 ```
 

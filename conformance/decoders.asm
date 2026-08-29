@@ -16,7 +16,7 @@
 ;                       winnerIndex, observedHash[8], hashValid
 ;   $C0FF      done marker = $AA
 ;
-; Build:  acme -f cbm -o build/decoders.prg decoders.asm   (run from this dir)
+; Build: asm198x --dialect acme --prg -I .. -I . decoders.asm -o build/decoders.prg
 
         !source "../src/zeropage.asm"
         !source "../src/buffers.asm"

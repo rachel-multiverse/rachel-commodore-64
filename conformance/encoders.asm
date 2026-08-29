@@ -16,7 +16,7 @@
 ;   $C080-$C0BF  DRAW_CARD  (fixture "draw_card",  seq 0x0023)
 ;   $C0FF        done marker = $AA once every test has run
 ;
-; Build:  acme -f cbm -o build/encoders.prg encoders.asm   (run from this dir)
+; Build: asm198x --dialect acme --prg -I .. -I . encoders.asm -o build/encoders.prg
 
         !source "../src/zeropage.asm"
         !source "../src/buffers.asm"

@@ -1,7 +1,8 @@
 # Rachel C64 - Makefile
-# Requires: acme (assembler), vice (emulator)
+# Requires: asm198x (assembler), VICE (optional emulator)
 
-ACME = acme
+ASM198X ?= asm198x
+ACME ?= acme
 VICE = x64sc
 SRC = src/main.asm
 OUT = build/rachel.prg
@@ -12,8 +13,13 @@ all: $(OUT)
 # Build the PRG file
 $(OUT): src/*.asm
 	@mkdir -p build
-	$(ACME) -f cbm -o $(OUT) --report build/report.txt $(SRC)
+	$(ASM198X) --dialect acme --prg -I . --listing=build/report.txt $(SRC) -o $(OUT)
 	@echo "Built: $(OUT)"
+
+# Differential oracle: prove the family assembler remains byte-identical to ACME.
+reference-parity: $(OUT)
+	$(ACME) -f cbm -o build/rachel-acme.prg $(SRC)
+	cmp $(OUT) build/rachel-acme.prg
 
 # Run in VICE (no network)
 run: $(OUT)
@@ -25,6 +31,10 @@ test-net: $(OUT)
 	$(VICE) -rsuser -rsuserbaud 2400 -rsuserdev 2 \
 		-rsdev2 "|nc localhost 19840" $(OUT)
 
+# Run the client codec against the canonical RUBP fixtures under Emu198x
+conformance:
+	python3 conformance/run.py
+
 # Clean build artifacts
 clean:
 	rm -rf build/*
@@ -33,4 +43,4 @@ clean:
 report: $(OUT)
 	@cat build/report.txt
 
-.PHONY: all run test-net clean report
+.PHONY: all run test-net conformance reference-parity clean report

@@ -19,8 +19,8 @@ Two phases:
 Exit status is non-zero on any BUG / UNEXPECTED / decoder mismatch.
 
 Usage:  python3 run.py
-Needs: acme, and emu198x-c64 (set EMU198X_C64, or it defaults to
-       ~/Projects/198x/Emu198x/target/debug/emu198x-c64).
+Needs: asm198x, and emu198x-c64 (set EMU198X_C64, or it defaults to
+       ~/Projects/198x/Emu198x/emu198x/target/debug/emu198x-c64).
 """
 import hashlib
 import json
@@ -34,8 +34,9 @@ FIXTURES = os.path.join(HERE, "rubp-messages-v1.json")
 FIXTURES_SHA = os.path.join(HERE, "rubp-messages-v1.sha256")
 EMU = os.environ.get(
     "EMU198X_C64",
-    os.path.expanduser("~/Projects/198x/Emu198x/target/debug/emu198x-c64"),
+    os.path.expanduser("~/Projects/198x/Emu198x/emu198x/target/debug/emu198x-c64"),
 )
+ASM198X = os.environ.get("ASM198X", "asm198x")
 
 # ---- Encoder harness (encoders.asm) -----------------------------------------
 ENC_PRG = os.path.join(BUILD, "encoders.prg")
@@ -69,7 +70,8 @@ def run(cmd):
 
 def assemble(src, prg):
     os.makedirs(BUILD, exist_ok=True)
-    run(["acme", "-f", "cbm", "-o", prg, src])
+    run([ASM198X, "--dialect", "acme", "--prg", "-I", "..", "-I", ".",
+         src, "-o", prg])
 
 
 def capture(prg, regions, done_addr):
@@ -262,6 +264,12 @@ def main():
     check_fixtures_pinned()
     fixtures = json.load(open(FIXTURES))
     print(f"RUBP codec conformance — C64 client vs {fixtures['fixture']}\n")
+    if "--assemble-only" in sys.argv:
+        gen_vectors_inc(fixtures)
+        assemble("encoders.asm", ENC_PRG)
+        assemble("decoders.asm", DEC_PRG)
+        print("RESULT: conformance harnesses assembled successfully (emulator run skipped).")
+        return
     failed = check_encoders(fixtures)
     failed |= check_decoders(fixtures)
     if failed:

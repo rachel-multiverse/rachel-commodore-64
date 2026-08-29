@@ -27,14 +27,14 @@ python3 run.py
 
 Requirements:
 
-- **acme** (the client's own assembler) on your `PATH`.
+- **asm198x** on your `PATH` (the client remains byte-parity checked against ACME).
 - **emu198x-c64**, the headless C64 runner from the Emu198x project. Build it
   once with `cargo build -p emu198x-c64 --no-default-features`, then either put
   it on `PATH` or point `EMU198X_C64` at the binary. The default is
-  `~/Projects/198x/Emu198x/target/debug/emu198x-c64`. It auto-discovers the C64
+  `~/Projects/198x/Emu198x/emu198x/target/debug/emu198x-c64`. It auto-discovers the C64
   ROMs from `~/.emu198x/roms/commodore-c64`.
 
-`run.py` assembles each harness PRG (`acme`), `--load`s it under Emu198x headless,
+`run.py` assembles each harness PRG with Asm198x, `--load`s it under Emu198x headless,
 types `RUN` to start it, `memory_read`s the capture region back as JSON, and
 prints a per-message, per-byte verdict. Exit status is non-zero if any **bug** or
 **unexplained** difference is present. (This is the same `memory_read` /

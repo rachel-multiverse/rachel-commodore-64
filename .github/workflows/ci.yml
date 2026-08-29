@@ -1,0 +1,55 @@
+name: C64 CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out client
+        uses: actions/checkout@v6
+
+      - name: Check out canonical protocol
+        uses: actions/checkout@v6
+        with:
+          repository: rachel-multiverse/protocol
+          path: canonical-protocol
+
+      - name: Check out pinned Asm198x
+        uses: actions/checkout@v6
+        with:
+          repository: asm198x/asm198x
+          ref: 694196dcf7276fe906db1e4cc7d305ed8cd0260b
+          path: toolchain/asm198x
+
+      - name: Build Asm198x
+        run: cargo build --locked --manifest-path toolchain/asm198x/Cargo.toml
+
+      - name: Verify protocol fixture is current
+        run: cmp conformance/rubp-messages-v1.json canonical-protocol/specs/fixtures/rubp-messages-v1.json
+
+      - name: Build client
+        env:
+          ASM198X: ${{ github.workspace }}/toolchain/asm198x/target/debug/asm198x
+        run: make
+
+      - name: Check conformance harness
+        env:
+          ASM198X: ${{ github.workspace }}/toolchain/asm198x/target/debug/asm198x
+        run: python3 conformance/run.py --assemble-only
+
+      - name: Check Python
+        run: python3 -m compileall -q conformance
