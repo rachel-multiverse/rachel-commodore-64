@@ -134,20 +134,13 @@ do_connect:
         ; Show connecting status
         jsr show_status_connecting
 
-        ; Reset modem first
-        jsr modem_reset
-        cmp #0
-        bne .connect_fail
-
-        ; Short delay after reset
-        jsr delay_250ms
-
-        ; Dial to host:port
+        ; Connect using the detected transport. Ultimate hardware opens a UCI
+        ; TCP socket directly; the fallback resets and dials the modem.
         lda #<IP_INPUT_BUF
         sta zp_ptr1
         lda #>IP_INPUT_BUF
         sta zp_ptr1+1
-        jsr modem_dial
+        jsr transport_connect
         cmp #0
         bne .connect_fail
 
@@ -167,6 +160,8 @@ do_connect:
 
         ; Wait for WELCOME
         jsr rubp_receive
+        cmp #0
+        bne .connect_fail
         jsr rubp_validate
         bne .connect_fail       ; Invalid message
 
@@ -213,11 +208,13 @@ wait_for_game:
         beq .wfg_cancel
 
         ; Try to receive message (non-blocking would be better but we'll poll)
-        jsr serial_available
+        jsr transport_available
         bne .wfg_loop           ; No data
 
         ; Got data - receive full message
         jsr rubp_receive
+        cmp #0
+        bne .wfg_cancel
         jsr rubp_validate
         bne .wfg_loop           ; Invalid, keep waiting
 

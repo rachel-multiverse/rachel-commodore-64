@@ -4,14 +4,17 @@
 
 Commodore 64 client for the Rachel card game, written in 6502 assembly.
 
-Connects to an iOS/macOS host via WiFi bridge using the RUBP (Rachel Unified Binary Protocol).
+Connects to the Rachel server using RUBP (Rachel Unified Binary Protocol).
+An enabled Ultimate Command Interface is detected first; a physical user-port
+WiFi modem is the fallback.
 
 ## Requirements
 
 - [Asm198x](https://github.com/asm198x/asm198x)
 - ACME Cross-Assembler (optional byte-parity oracle)
 - [VICE Emulator](https://vice-emu.sourceforge.io/) (for testing)
-- Zimodem-compatible WiFi modem (for real hardware)
+- 1541 Ultimate-II or later with current network-capable firmware (preferred)
+- Sven Petersen C64 WiFi Modem User Port Rev. 2 running Zimodem (fallback)
 
 ### macOS Installation
 
@@ -23,6 +26,7 @@ brew install asm198x/tap/asm198x acme vice
 
 ```bash
 make            # Build rachel.prg
+make test       # Build and verify both real-hardware transport contracts
 make conformance # Run RUBP codec checks under Emu198x
 make clean      # Remove build artifacts
 ```
@@ -41,21 +45,38 @@ make test-net   # Launch with RS232->TCP bridge
 
 For network testing, first start an iOS host or test server on port 19840.
 
-## Hardware Setup
+## Hardware setup
 
-For real C64 hardware:
+### Ultimate-II, Ultimate-II+, Ultimate-II+L, Ultimate 64, or C64 Ultimate
 
-1. Connect Zimodem to User Port
-2. Configure for 2400 baud, 8N1
+1. Install current firmware and configure Ethernet or Wi-Fi.
+2. Enable **Command Interface** in the Ultimate configuration.
+3. Ensure `$DF1C-$DF1F` is not claimed by another enabled cartridge function.
+4. Load and run `rachel.prg`, then enter `HOST:PORT`.
+
+Rachel detects identification byte `$C9` and uses UCI Network Target `$03`
+directly. It opens a TCP socket and transfers binary 64-byte messages through
+the UCI queues; it does not use modem emulation or the C64 user port.
+
+### User-port fallback
+
+1. Connect a Sven Petersen C64 WiFi Modem User Port Rev. 2.
+2. Install Zimodem and save a 2400-baud, 8N1, no-flow-control profile.
 3. Load and run `rachel.prg`
-4. Enter host IP address when prompted
+4. Enter `HOST:PORT` when prompted.
+
+The fallback uses the board wiring as published: C64 `PA2` transmits to the
+modem and modem TXD is received on `PB0`/`FLAG2`, with the board providing the
+required 3.3 V/5 V level conversion.
 
 ## Project Structure
 
 ```
 src/
   main.asm      - Entry point, main loop
-  serial.asm    - User Port serial I/O
+  ultimate.asm  - Ultimate Command Interface TCP implementation
+  transport.asm - Runtime UCI/user-port selection
+  serial.asm    - User Port serial fallback
   modem.asm     - AT command handling (Zimodem)
   rubp.asm      - RUBP message encoding/decoding
   screen.asm    - PETSCII screen rendering

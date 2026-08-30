@@ -29,6 +29,8 @@ zp_rx_head      = $0a           ; Receive buffer head index
 zp_rx_tail      = $0b           ; Receive buffer tail index
 zp_tx_head      = $0c           ; Transmit buffer head index
 zp_tx_tail      = $0d           ; Transmit buffer tail index
+zp_transport    = $0e           ; 0=user-port modem, 1=Ultimate UCI
+zp_socket       = $0f           ; Ultimate network socket handle
 
 ; -----------------------------------------------------------------------------
 ; Protocol State ($10-$17)

@@ -6,8 +6,8 @@
 ; 64-byte result in a capture region for the host to read back and diff.
 ;
 ; The encoders build into SERIAL_TX_BUF and then `jmp rubp_send`, which streams
-; the buffer out one byte at a time via serial_send_byte. We stub that (and
-; serial_recv_byte) to RTS so nothing touches the User Port — the built message
+; hands the complete buffer to transport_send_frame. We stub transport I/O so
+; nothing touches hardware — the built message
 ; still sits in SERIAL_TX_BUF, which is what we capture.
 ;
 ; Capture layout (free RAM at $C000):
@@ -186,11 +186,11 @@ load_obs_hash:
         rts
 
 ; -----------------------------------------------------------------------------
-; Serial stubs — the encoders call these; we don't want real User Port I/O.
+; Transport stubs — the encoders call send; no hardware I/O in conformance.
 ; -----------------------------------------------------------------------------
-serial_send_byte:
+transport_send_frame:
         rts
-serial_recv_byte:
+transport_receive_frame:
         lda #0
         rts
 

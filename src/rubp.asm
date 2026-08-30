@@ -129,27 +129,13 @@ rubp_build_header:
 ; Send TX buffer as complete 64-byte message
 ; -----------------------------------------------------------------------------
 rubp_send:
-        ldx #0
-.tx_loop:
-        lda SERIAL_TX_BUF,x
-        jsr serial_send_byte
-        inx
-        cpx #RUBP_MSG_SIZE
-        bne .tx_loop
-        rts
+        jmp transport_send_frame
 
 ; -----------------------------------------------------------------------------
 ; Receive 64-byte message into RX buffer (blocking)
 ; -----------------------------------------------------------------------------
 rubp_receive:
-        ldx #0
-.rx_loop:
-        jsr serial_recv_byte
-        sta SERIAL_RX_BUF,x
-        inx
-        cpx #RUBP_MSG_SIZE
-        bne .rx_loop
-        rts
+        jmp transport_receive_frame
 
 ; -----------------------------------------------------------------------------
 ; Validate RX buffer has valid RUBP header

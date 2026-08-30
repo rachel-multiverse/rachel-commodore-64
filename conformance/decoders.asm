@@ -141,11 +141,11 @@ load_rx:
         rts
 
 ; -----------------------------------------------------------------------------
-; Serial stubs (unused by the parsers, but rubp.asm references them).
+; Transport stubs (unused by the parsers, but rubp.asm references them).
 ; -----------------------------------------------------------------------------
-serial_send_byte:
+transport_send_frame:
         rts
-serial_recv_byte:
+transport_receive_frame:
         lda #0
         rts
 

@@ -43,4 +43,7 @@ clean:
 report: $(OUT)
 	@cat build/report.txt
 
-.PHONY: all run test-net conformance reference-parity clean report
+test: $(OUT)
+	python3 tests/test_transport.py
+
+.PHONY: all test run test-net conformance reference-parity clean report

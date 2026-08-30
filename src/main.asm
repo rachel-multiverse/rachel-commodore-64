@@ -2,7 +2,7 @@
 ; Assembles to a PRG file that loads at $0801
 ;
 ; A render-only client for the Rachel card game.
-; Connects to iOS host via Zimodem WiFi bridge.
+; Connects through an Ultimate UCI TCP socket or a user-port WiFi modem.
 
 ; =============================================================================
 ; SYMBOL DEFINITIONS (no code, just constants)
@@ -46,8 +46,9 @@ start:
         ; Initialize all buffers
         jsr init_buffers
 
-        ; Initialize serial port (User Port, 2400 baud)
-        jsr serial_init
+        ; Prefer a detected Ultimate command interface; otherwise initialize
+        ; the physical user-port modem transport.
+        jsr transport_init
 
         ; Initialize screen (blue background, clear, white text)
         jsr screen_init
@@ -103,6 +104,8 @@ start:
         !source "src/input.asm"
         !source "src/serial.asm"
         !source "src/modem.asm"
+        !source "src/ultimate.asm"
+        !source "src/transport.asm"
         !source "src/rubp.asm"
         !source "src/game.asm"
         !source "src/connect.asm"
@@ -134,6 +137,8 @@ init_buffers:
         sta zp_rx_tail
         sta zp_tx_head
         sta zp_tx_tail
+        sta zp_transport
+        sta zp_socket
 
         ; Initialize game state
         sta zp_hand_count

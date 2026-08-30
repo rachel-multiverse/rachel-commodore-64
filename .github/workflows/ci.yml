@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: asm198x/asm198x
-          ref: 694196dcf7276fe906db1e4cc7d305ed8cd0260b
+          ref: 7eaf637f17879a7877fe08bbe5c5c6b5a667179b
           path: toolchain/asm198x
 
       - name: Build Asm198x
@@ -44,7 +44,7 @@ jobs:
       - name: Build client
         env:
           ASM198X: ${{ github.workspace }}/toolchain/asm198x/target/debug/asm198x
-        run: make
+        run: make test
 
       - name: Check conformance harness
         env:

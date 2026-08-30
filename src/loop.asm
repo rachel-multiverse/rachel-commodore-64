@@ -32,11 +32,13 @@ game_loop:
 ; Check for incoming network messages
 ; -----------------------------------------------------------------------------
 check_network:
-        jsr serial_available
+        jsr transport_available
         bne .cn_done            ; No data waiting
 
         ; Data available - receive full RUBP message
         jsr rubp_receive
+        cmp #0
+        bne .cn_done
         jsr rubp_validate
         bne .cn_done            ; Invalid message
 

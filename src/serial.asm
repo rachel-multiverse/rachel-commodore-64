@@ -6,7 +6,7 @@
 ; Hardware:
 ;   CIA2 ($DD00-$DD0F) controls the User Port
 ;   PA2 = TXD (directly toggleable via CIA2_PRA bit 2)
-;   FLAG = RXD (directly readable via CIA2_PRB bit 4)
+;   PB0/FLAG2 = RXD on the Sven Petersen Rev. 2 user-port board
 ;
 ; Timing:
 ;   2400 baud = 416.67 cycles per bit at 1MHz
@@ -27,7 +27,7 @@ CIA2_ICR        = $dd0d         ; Interrupt control register
 ; -----------------------------------------------------------------------------
 
 TXD_BIT         = %00000100     ; PA2 - transmit data (active low)
-RXD_BIT         = %00010000     ; FLAG/PB4 - receive data
+RXD_BIT         = %00000001     ; PB0 - modem TXD (also wired to FLAG2)
 
 ; -----------------------------------------------------------------------------
 ; Timing Constants
@@ -53,6 +53,11 @@ serial_init:
         ora #TXD_BIT            ; PA2 = output
         sta CIA2_DDRA
 
+        ; PB0 is the modem-to-C64 data line and must remain an input.
+        lda CIA2_DDRB
+        and #%11111110
+        sta CIA2_DDRB
+
         ; Set TXD high (idle state, marking)
         lda CIA2_PRA
         ora #TXD_BIT            ; PA2 = high
@@ -69,12 +74,12 @@ serial_init:
 ; Start bit = low, Stop bit = high
 ; -----------------------------------------------------------------------------
 serial_send_byte:
+        sta zp_temp1            ; Save byte before A is used to save X/Y.
         txa
         pha
         tya
         pha
         sei                     ; Disable interrupts for timing
-        sta zp_temp1            ; Save byte to send
         ldx #8                  ; 8 data bits
 
         ; === Start bit (low) ===
