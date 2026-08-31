@@ -31,10 +31,18 @@ make conformance # Run RUBP codec checks under Emu198x
 make clean      # Remove build artifacts
 ```
 
-Runtime buffers live in free RAM at `$C100-$C2FF`; the KERNAL vectors and
+Runtime buffers live in free RAM at `$C100-$C3FF`; the KERNAL vectors and
 cassette workspace in page `$03` are left untouched. All 32 possible hand
 slots can be selected, and private hand state is reconciled through
 `GAME_START`, `CARD_DRAWN`, and `HAND_SYNC`.
+
+The client advertises `CAP_SYNC_ACK`, so the host holds `TURN_START` until the
+client acknowledges the `GAME_STATE` + `HAND_SYNC` pair it was sent. Only a
+`GAME_STATE` the client parsed itself can be acknowledged: the state hash rides
+on several message types, and acknowledging one the client never received would
+have it act a turn behind. Conformance covers that directly, against golden
+fixtures whose `GAME_STATE` and `HAND_SYNC` carry deliberately different
+hashes.
 
 ## Running in VICE
 
