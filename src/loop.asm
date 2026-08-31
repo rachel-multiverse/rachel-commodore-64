@@ -80,7 +80,13 @@ check_network:
 .cn_hand_sync:
         jsr rubp_parse_game_start
         jsr draw_hand
-        rts
+        ; HAND_SYNC completes the recovery pair, so this is where the host is
+        ; waiting. Only answer when it negotiated the capability: an ACK flag
+        ; sent to a host that did not is read as a plain resync request, and
+        ; would pull the pair down again on every HAND_SYNC.
+        lda SERVER_SYNC_ACK
+        beq .cn_done
+        jmp rubp_send_sync_request
 
 .cn_turn_start:
         ; Turn started - update status

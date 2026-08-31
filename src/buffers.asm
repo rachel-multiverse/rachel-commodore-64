@@ -41,6 +41,18 @@ HASH_VALID      = $c2d8
 SELECTED_CARDS  = $c2d9         ; 32 one-byte booleans, cards 0-31
 
 ; -----------------------------------------------------------------------------
+; Sync Acknowledgement State ($C300-$C303)
+; -----------------------------------------------------------------------------
+; The turn number and spec version from the same GAME_STATE that produced
+; OBSERVED_HASH, so an acknowledgement describes one coherent snapshot rather
+; than fields gathered from whichever messages happened to arrive.
+
+OBSERVED_TURN   = $c300         ; 4 bytes, big-endian as received
+OBSERVED_SPEC   = $c304         ; 2 bytes, big-endian as received
+SERVER_SYNC_ACK = $c306         ; Host accepted the sync-ACK negotiation
+GAME_STATE_FRESH = $c307        ; A GAME_STATE arrived and is not yet acknowledged
+
+; -----------------------------------------------------------------------------
 ; Buffer Size Constants
 ; -----------------------------------------------------------------------------
 

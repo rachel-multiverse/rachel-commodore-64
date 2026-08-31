@@ -125,12 +125,13 @@ init_buffers:
         cpx #64
         bne .clear_serial
 
-        ; Clear application game state ($C200-$C2FF), never KERNAL page $03.
+        ; Clear application game state ($C200-$C3FF), never KERNAL page $03.
         ldx #0
 .clear_game:
         sta $c200,x
+        sta $c300,x
         inx
-        bne .clear_game         ; Clears full 256 bytes
+        bne .clear_game         ; Clears both full pages
 
         ; Initialize zero page buffer pointers
         sta zp_rx_head

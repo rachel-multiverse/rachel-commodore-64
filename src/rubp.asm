@@ -59,6 +59,16 @@ PLATFORM_C64    = $0002
 SPEC_VERSION_HI = $00
 SPEC_VERSION_LO = $01
 
+; -----------------------------------------------------------------------------
+; Capability bits (HELLO payload+36, echoed in WELCOME payload+8)
+; -----------------------------------------------------------------------------
+
+CAP_SYNC_ACK    = $01           ; Host holds TURN_START until we acknowledge
+
+; SYNC_REQUEST flag bits (payload+6)
+SYNC_F_HASH     = $01           ; ObservedStateHash is present
+SYNC_F_ACK      = $02           ; This is an acknowledgement, not a resync ask
+
 ; =============================================================================
 ; RUBP SUBROUTINES
 ; =============================================================================
@@ -205,6 +215,17 @@ rubp_send_hello:
         lda #SPEC_VERSION_LO
         sta SERIAL_TX_BUF+PAYLOAD_START+19
 
+        ; ReconnectToken (payload+20) and RoomCode (payload+28) stay zero: this
+        ; client does not reclaim slots (decision 0002) and joins the open game.
+
+        ; Capabilities at payload+36. Bit 0 asks the host to hold TURN_START
+        ; until we acknowledge the GAME_STATE + HAND_SYNC pair. A bit-banged
+        ; UART on a machine that also has to draw a screen cannot reliably
+        ; catch consecutive 64-byte frames, so this is the difference between
+        ; acting on the current table and acting a turn behind.
+        lda #CAP_SYNC_ACK
+        sta SERIAL_TX_BUF+PAYLOAD_START+36
+
         ; Send message
         jmp rubp_send
 
@@ -228,6 +249,15 @@ rubp_parse_welcome:
         ; Player count at payload+4
         lda SERIAL_RX_BUF+PAYLOAD_START+4
         sta zp_temp1            ; Store for caller
+
+        ; Capability echo at payload+8. The host repeats our sync-ACK bit only
+        ; when it accepted the negotiation, and we must not acknowledge a
+        ; handshake it is not running: an ACK flag sent without negotiation is
+        ; read as an ordinary resync request, which would fetch the pair again
+        ; on every HAND_SYNC.
+        lda SERIAL_RX_BUF+PAYLOAD_START+8
+        and #CAP_SYNC_ACK
+        sta SERVER_SYNC_ACK
 
         ; Update connection state
         lda #CONN_WAITING
@@ -294,6 +324,27 @@ rubp_parse_game_state:
         bne .gs_copy_hash
         lda #1
         sta HASH_VALID
+
+        ; The turn number (payload+17) and spec version (payload+21) belong to
+        ; this same message, so an acknowledgement describes one snapshot. Both
+        ; are copied big-endian exactly as received, to be echoed unaltered.
+        ldx #0
+.gs_copy_turn:
+        lda SERIAL_RX_BUF+PAYLOAD_START+17,x
+        sta OBSERVED_TURN,x
+        inx
+        cpx #4
+        bne .gs_copy_turn
+
+        lda SERIAL_RX_BUF+PAYLOAD_START+21
+        sta OBSERVED_SPEC
+        lda SERIAL_RX_BUF+PAYLOAD_START+22
+        sta OBSERVED_SPEC+1
+
+        ; This message is what makes an acknowledgement honest: it is the one
+        ; we actually parsed. Nothing else sets the flag.
+        lda #1
+        sta GAME_STATE_FRESH
         jmp .gs_done
 .gs_no_hash:
         lda #0
@@ -437,6 +488,76 @@ rubp_send_draw_card:
         jmp rubp_send
 
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; Send SYNC_REQUEST, acknowledging the GAME_STATE + HAND_SYNC pair when we
+; genuinely hold one.
+;
+; A host that accepted CAP_SYNC_ACK will not send TURN_START until an
+; acknowledgement arrives whose hash matches the pair it sent. That only works
+; if the acknowledgement means what the host assumes, so it must describe a
+; snapshot this client actually parsed.
+;
+; The trap the VIC-20 client fell into: the state hash rides on GAME_STATE,
+; HAND_SYNC and TURN_START alike. Keep one hash variable, let every handler
+; write it, and acknowledge on HAND_SYNC, and a discarded GAME_STATE is still
+; certified — you return a perfectly current hash for a view you never saw, the
+; host releases TURN_START, and you act a turn behind on whichever fields only
+; GAME_STATE carries (the top discard above all). Here GAME_STATE is the sole
+; writer of OBSERVED_HASH / OBSERVED_TURN / OBSERVED_SPEC, and GAME_STATE_FRESH
+; says one arrived and has not been acknowledged yet.
+;
+; Without that flag we send a plain resync request instead: the host answers by
+; resending the pair, which costs one round trip rather than a wrong turn. Frame
+; loss is the ordinary condition of a bit-banged UART, not an edge case.
+;
+; See protocol/CLIENT_GUIDE.md, "Acknowledge what you received, not what you
+; were told", and specs/rachel-sync-v1.md.
+; Clobbers: A, X, Y
+; -----------------------------------------------------------------------------
+rubp_send_sync_request:
+        lda #MSG_SYNC_REQUEST
+        jsr rubp_build_header
+
+        ; TurnNumber (payload+0..3), big-endian exactly as received.
+        ldx #0
+.sr_turn:
+        lda OBSERVED_TURN,x
+        sta SERIAL_TX_BUF+PAYLOAD_START,x
+        inx
+        cpx #4
+        bne .sr_turn
+
+        ; SpecVersion (payload+4,5), likewise echoed rather than assumed.
+        lda OBSERVED_SPEC
+        sta SERIAL_TX_BUF+PAYLOAD_START+4
+        lda OBSERVED_SPEC+1
+        sta SERIAL_TX_BUF+PAYLOAD_START+5
+
+        ; Flags at payload+6, ObservedStateHash at payload+7..14.
+        ldx #6
+        jsr write_obs_hash
+
+        ; Bit 1 turns the request into an acknowledgement, and only a GAME_STATE
+        ; we parsed ourselves earns it. No hash means nothing to acknowledge.
+        lda GAME_STATE_FRESH
+        beq .sr_send
+        lda HASH_VALID
+        beq .sr_send
+
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        ora #SYNC_F_ACK
+        sta SERIAL_TX_BUF+PAYLOAD_START+6
+
+        ; One acknowledgement per pair: the next one waits for the next
+        ; GAME_STATE, so a lost frame downgrades us to asking rather than
+        ; letting us certify the same snapshot twice.
+        lda #0
+        sta GAME_STATE_FRESH
+
+.sr_send:
+        jmp rubp_send
+
+; -----------------------------------------------------------------------------
 ; Write the Flags byte + ObservedStateHash into the TX payload.
 ; Input: X = payload offset of the Flags byte; the 8-byte hash follows at X+1..X+8
 ; If no state hash has been captured yet, the (already-cleared) flag and hash
@@ -447,7 +568,7 @@ write_obs_hash:
         lda HASH_VALID
         beq .woh_done
 
-        lda #$01                ; Flags bit0 = ObservedStateHash present
+        lda #SYNC_F_HASH        ; Flags bit0 = ObservedStateHash present
         sta SERIAL_TX_BUF+PAYLOAD_START,x
 
         ldy #0

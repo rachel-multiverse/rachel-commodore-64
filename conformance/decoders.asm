@@ -14,6 +14,7 @@
 ;   GAME_STATE ($C010): currentTurn, direction, topCard, nominatedSuit,
 ;                       pendingDraws, deckCount, playerCounts[8], gameOver,
 ;                       winnerIndex, observedHash[8], hashValid
+;   SYNC_ACK   ($C030): flags, turnNumber[4], specVersion[2], stateHash[8]
 ;   $C0FF      done marker = $AA
 ;
 ; Build: asm198x --dialect acme --prg -I .. -I . decoders.asm -o build/decoders.prg
@@ -23,6 +24,7 @@
 
 DCAP_WELCOME = $c000
 DCAP_GS      = $c010
+DCAP_SYNC    = $c030
 DCAP_DONE    = $c0ff
 
         * = $0801
@@ -39,6 +41,7 @@ start:
 
         jsr test_welcome
         jsr test_game_state
+        jsr test_sync_ack
 
         lda #$aa
         sta DCAP_DONE
@@ -125,6 +128,59 @@ test_game_state:
         bne .dhash              ; DCAP_GS+16 .. +23
         lda HASH_VALID
         sta DCAP_GS+24
+        rts
+
+; -----------------------------------------------------------------------------
+; SYNC ACK: the acknowledgement must describe the GAME_STATE we actually parsed.
+;
+; GAME_STATE and HAND_SYNC both carry a state hash, and the golden fixtures
+; deliberately carry different ones (GAME_STATE $ABC..., HAND_SYNC $1111...).
+; Feeding the pair in order and then acknowledging proves the client echoes
+; GAME_STATE's snapshot rather than whichever message arrived last.
+;
+; A client that lets HAND_SYNC overwrite the hash returns a perfectly current
+; value for a view it may never have received. The host takes it at its word,
+; releases TURN_START, and the client acts a turn behind on the fields only
+; GAME_STATE carries — the top discard above all. That is the bug the VIC-20
+; client shipped with; it fired seven to nine times per ten-play game.
+; -----------------------------------------------------------------------------
+test_sync_ack:
+        lda #<game_state_msg
+        sta zp_ptr1
+        lda #>game_state_msg
+        sta zp_ptr1+1
+        jsr load_rx
+        jsr rubp_parse_game_state
+
+        ; HAND_SYNC completes the pair. Its own turn number and hash must not
+        ; displace the ones we are about to acknowledge.
+        lda #<hand_sync_msg
+        sta zp_ptr1
+        lda #>hand_sync_msg
+        sta zp_ptr1+1
+        jsr load_rx
+        jsr rubp_parse_game_start
+
+        jsr rubp_send_sync_request
+
+        lda SERIAL_TX_BUF+PAYLOAD_START+6       ; Flags
+        sta DCAP_SYNC+0
+
+        ldx #0
+.sa_meta:
+        lda SERIAL_TX_BUF+PAYLOAD_START,x       ; TurnNumber[4] + SpecVersion[2]
+        sta DCAP_SYNC+1,x
+        inx
+        cpx #6
+        bne .sa_meta
+
+        ldy #0
+.sa_hash:
+        lda SERIAL_TX_BUF+PAYLOAD_START+7,y     ; ObservedStateHash[8]
+        sta DCAP_SYNC+7,y
+        iny
+        cpy #8
+        bne .sa_hash
         rts
 
 ; -----------------------------------------------------------------------------
