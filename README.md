@@ -4,9 +4,15 @@
 
 Commodore 64 client for the Rachel card game, written in 6502 assembly.
 
-Connects to the Rachel server using RUBP (Rachel Unified Binary Protocol).
-An enabled Ultimate Command Interface is detected first; a physical user-port
-WiFi modem is the fallback.
+Plays two ways. **Standalone** needs nothing but the machine: a local rules
+kernel deals, enforces and plays the opponents, for the full 2-8 players the
+rules define. **Online** connects to the Rachel server using RUBP (Rachel
+Unified Binary Protocol); an enabled Ultimate Command Interface is detected
+first, and a physical user-port WiFi modem is the fallback.
+
+The two never mix. Online, the host is authoritative and the client renders
+what it is told; the local kernel is not consulted about legality. That is the
+line decision 0003 draws and decision 0006 leaves in place.
 
 ## Requirements
 
@@ -25,11 +31,26 @@ brew install asm198x/tap/asm198x acme vice
 ## Building
 
 ```bash
-make            # Build rachel.prg
-make test       # Build and verify both real-hardware transport contracts
-make conformance # Run RUBP codec checks under Emu198x
-make clean      # Remove build artifacts
+make               # Build rachel.prg
+make test          # Build and verify both real-hardware transport contracts
+make conformance   # Run RUBP codec checks under Emu198x
+make solo-selftest # Play 16 complete solo games under Emu198x, 2-8 seats
+make e2e-full-game # Play a networked game against the Go server
+make clean         # Remove build artifacts
 ```
+
+## Standalone play
+
+Answer `S` at the opening prompt and pick a table size. The kernel deals from a
+shuffled deck seeded off the jiffy clock and the raster, so no two games start
+the same, and the opponents play by the same rules you do.
+
+`make solo-selftest` plays sixteen complete games headlessly across every table
+size and checks two things after each: that the game actually ended, and that
+all 52 cards are still accounted for. The card count is what catches the family
+of faults a card kernel is prone to — a draw that forgets to shrink the deck, a
+recycle that duplicates the pile — which otherwise look perfectly plausible on
+screen.
 
 Runtime buffers live in free RAM at `$C100-$C3FF`; the KERNAL vectors and
 cassette workspace in page `$03` are left untouched. All 32 possible hand
