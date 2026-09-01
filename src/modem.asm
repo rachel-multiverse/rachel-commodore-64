@@ -64,11 +64,11 @@ modem_wait_response:
 .resp_no_overflow:
 
         ; Check for incoming data
-        jsr serial_available
-        bne .resp_loop          ; No data, keep waiting
+        jsr serial_rx_ready
+        beq .resp_loop          ; Nothing buffered, keep waiting
 
         ; Read character
-        jsr serial_recv_byte
+        jsr serial_rx_get
 
         ; Check for 'O' (start of "OK")
         cmp #'O'
@@ -83,7 +83,7 @@ modem_wait_response:
 
 .resp_check_ok:
         ; Wait for 'K' to confirm "OK"
-        jsr serial_recv_byte
+        jsr modem_next_byte
         cmp #'K'
         bne .resp_loop          ; False positive, keep looking
         lda #0                  ; OK response
@@ -101,6 +101,25 @@ modem_wait_response:
 ; Reset modem (ATZ)
 ; Returns: A = 0 if OK, nonzero if failed
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; Wait briefly for the next buffered byte.
+; Out: A = byte (0 if none arrived). Clobbers: A, X.
+; -----------------------------------------------------------------------------
+modem_next_byte:
+        ldx #0
+.mnb_outer:
+        ldy #0
+.mnb_inner:
+        jsr serial_rx_get
+        bcs .mnb_got
+        dey
+        bne .mnb_inner
+        dex
+        bne .mnb_outer
+        lda #0
+.mnb_got:
+        rts
+
 modem_reset:
         lda #<cmd_z
         sta zp_ptr1
@@ -173,11 +192,11 @@ modem_wait_connect:
 .mwc_no_overflow:
 
         ; Check for data
-        jsr serial_available
-        bne .mwc_loop
+        jsr serial_rx_ready
+        beq .mwc_loop
 
         ; Read character
-        jsr serial_recv_byte
+        jsr serial_rx_get
 
         ; Check for 'C' (start of "CONNECT")
         cmp #'C'
@@ -217,10 +236,10 @@ modem_drain_line:
         inc zp_temp3
         beq .dl_done            ; Timeout after 256 chars
 
-        jsr serial_available
-        bne .dl_loop            ; No data, keep waiting
+        jsr serial_rx_ready
+        beq .dl_loop            ; Nothing buffered, keep waiting
 
-        jsr serial_recv_byte
+        jsr serial_rx_get
         cmp #$0d                ; CR?
         beq .dl_done
         cmp #$0a                ; LF?

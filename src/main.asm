@@ -125,6 +125,7 @@ start:
         !source "src/screen.asm"
         !source "src/input.asm"
         !source "src/serial.asm"
+        !source "src/serial_rx.asm"
         !source "src/modem.asm"
         !source "src/ultimate.asm"
         !source "src/transport.asm"
