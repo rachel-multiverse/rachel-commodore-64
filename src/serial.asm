@@ -3,6 +3,14 @@
 ; =============================================================================
 ; Bit-banged serial communication via User Port at 2400 baud
 ;
+; Interrupt policy: each routine masks interrupts for the byte it is clocking
+; and restores the caller's state afterwards, rather than unconditionally
+; re-enabling. A whole 64-byte frame takes a quarter of a second on this link,
+; which is fifteen or more KERNAL interrupts; masking only within a byte leaves
+; every inter-byte gap open to a jiffy IRQ that arrives mid-start-bit. Callers
+; that move a frame hold `sei` across the whole thing, and php/plp is what lets
+; them.
+;
 ; Hardware:
 ;   CIA2 ($DD00-$DD0F) controls the User Port
 ;   PA2 = TXD (directly toggleable via CIA2_PRA bit 2)
@@ -79,7 +87,8 @@ serial_send_byte:
         pha
         tya
         pha
-        sei                     ; Disable interrupts for timing
+        php                     ; Keep the caller's interrupt state...
+        sei                     ; ...while this byte is clocked out
         ldx #8                  ; 8 data bits
 
         ; === Start bit (low) ===
@@ -109,7 +118,7 @@ serial_send_byte:
         sta CIA2_PRA
         jsr serial_bit_delay
 
-        cli                     ; Re-enable interrupts
+        plp                     ; Restore, so a frame-wide sei survives
         pla
         tay
         pla
@@ -128,7 +137,8 @@ serial_recv_byte:
         pha
         tya
         pha
-        sei                     ; Disable interrupts for timing
+        php
+        sei
         lda #0
         sta zp_temp1            ; Clear result
 
@@ -159,7 +169,7 @@ serial_recv_byte:
         ; Wait through stop bit
         jsr serial_bit_delay
 
-        cli                     ; Re-enable interrupts
+        plp
         lda zp_temp1
         sta zp_temp2
         pla
