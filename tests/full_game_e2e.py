@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Complete a deterministic C64 game in Emu198x against the Go server.
 
-Drives the real client PRG through the emulated user-port ESP-AT modem, so the
-bytes crossing the link are the ones a Sven Petersen modem would carry: 8N1 at
-9600 baud, bit-banged against CIA #2 PA2/PB0 (user-port pins M and C).
+Runs over the emulated Ultimate Command Interface by default, which is the
+transport the client prefers and the one the recommended hardware provides: a
+buffered device driven through four registers, with no line rate to hold and no
+framing to recover. Set RACHEL_E2E_TRANSPORT=userport to exercise the
+bit-banged modem fallback instead.
 """
 
 from pathlib import Path
@@ -25,13 +27,17 @@ OUTPUT = ROOT / "build" / os.environ.get("RACHEL_E2E_OUTPUT", "e2e-output")
 SEED = int(os.environ.get("RACHEL_E2E_SEED", "2"))
 MIN_PLAYERS = int(os.environ.get("RACHEL_E2E_MIN_PLAYERS", "2"))
 AI_PLAYERS = int(os.environ.get("RACHEL_E2E_AI_PLAYERS", "1"))
-GAME_FRAMES = int(os.environ.get("RACHEL_E2E_GAME_FRAMES", "120000"))
+# Sized for the Ultimate, which finishes a two-hand game in a few thousand
+# frames. The bit-banged fallback is far slower — a 64-byte frame is a quarter
+# of a second there — so raise this when running that transport.
+GAME_FRAMES = int(os.environ.get("RACHEL_E2E_GAME_FRAMES", "20000"))
 WRITE_INTERVAL = os.environ.get("RACHEL_E2E_WRITE_INTERVAL", "0")
 MODEL = os.environ.get("RACHEL_E2E_MODEL", "pal").lower()
 # The client times its bits from a CIA timer rather than a counted loop, so it
 # holds a real 2400 baud regardless of what the VIC-II is doing. No fudge
 # factor: this is the rate a physical modem would be set to.
 BAUD = int(os.environ.get("RACHEL_E2E_BAUD", "2400"))
+TRANSPORT = os.environ.get("RACHEL_E2E_TRANSPORT", "ultimate").lower()
 PORT = int(os.environ.get("RACHEL_E2E_PORT", "6502"))
 
 
@@ -100,6 +106,12 @@ def main() -> None:
         {"action": "run_frames", "frames": GAME_FRAMES},
     ], indent=2) + "\n")
 
+    transport_args = (
+        ["--ultimate-net"]
+        if TRANSPORT == "ultimate"
+        else ["--esp-at-tcp", "--esp-at-baud", str(BAUD)]
+    )
+
     command = ["go", "run", ".", "serve", "--addr", f"127.0.0.1:{PORT}",
                "--min-players", str(MIN_PLAYERS), "--ai-players", str(AI_PLAYERS),
                "--auto-start", "1ms", "--ai-delay", "0",
@@ -114,11 +126,9 @@ def main() -> None:
             result = subprocess.run([
                 str(EMU_BIN), "--headless", "--model", MODEL,
                 "--rom-dir", str(ROMS),
-                "--load", str(prg), "--esp-at-tcp",
-                "--esp-at-baud", str(BAUD),
+                "--load", str(prg), *transport_args,
                 "--script", str(session_path),
                 "--screenshot", str(screenshot_path),
-                "--print-query", "userport.esp_at.error",
             ], cwd=EMU, text=True, capture_output=True, timeout=600)
             emulator_log_path.write_text(result.stdout + result.stderr)
         finally:
@@ -135,7 +145,7 @@ def main() -> None:
         raise SystemExit("emulator did not produce the final screenshot")
     if screenshot_path.stat().st_size < 1_000:
         raise SystemExit("final screenshot is unexpectedly blank or truncated")
-    print(f"Complete deterministic C64 game passed: {OUTPUT}")
+    print(f"Complete deterministic C64 game passed over {TRANSPORT}: {OUTPUT}")
 
 
 if __name__ == "__main__":

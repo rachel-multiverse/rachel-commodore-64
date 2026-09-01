@@ -200,6 +200,33 @@ serial_recv_byte:
         clc
         rts
 .got_start:
+        jsr serial_recv_bits
+        sta zp_temp2
+        jsr serial_bit_delay    ; sit through the stop bit
+        plp
+        pla
+        tay
+        pla
+        tax
+        lda zp_temp2
+        sec
+        rts
+
+; -----------------------------------------------------------------------------
+; Clock in the eight data bits of a byte whose start edge has just been seen.
+; Out: A = byte. Clobbers: A, X.
+;
+; Shifts through its own storage rather than zp_temp1, because this runs inside
+; an NMI: zp_temp1 is what serial_send_byte holds the outgoing byte in, and an
+; interrupt landing mid-send would otherwise transmit whatever was arriving.
+;
+; Split out so the /FLAG2 interrupt handler can use it: that interrupt fires on
+; the start edge itself, so waiting for one again would sit through the byte it
+; was told about and catch the next one instead.
+; -----------------------------------------------------------------------------
+serial_recv_bits:
+        lda #0
+        sta rx_shift
 
         ; Start the bit clock at the middle of bit 0 and let it free-run.
         jsr serial_clock_start_rx
@@ -215,22 +242,16 @@ serial_recv_byte:
         beq .bit_low            ; Branch if bit is low
         sec                     ; Bit is high, set carry
 .bit_low:
-        ror zp_temp1            ; Rotate carry into MSB (builds byte LSB first)
+        ror rx_shift            ; Rotate carry into MSB (builds byte LSB first)
         dex
         bne .recv_bit
 
-        ; Wait through stop bit
-        jsr serial_bit_delay
-
-        plp
-        lda zp_temp1
-        sta zp_temp2
-        pla
-        tay
-        pla
-        tax
-        lda zp_temp2            ; Return received byte
-        sec
+        ; Deliberately does NOT wait out the stop bit. The interrupt handler
+        ; needs that bit's worth of time to re-arm /FLAG2 before the next start
+        ; edge arrives; waiting here would hand it back exactly as the edge
+        ; lands, and the acknowledge that re-arming needs would swallow it.
+        ; Every other byte of a frame went missing that way.
+        lda rx_shift            ; Return received byte
         rts
 
 ; -----------------------------------------------------------------------------
@@ -264,6 +285,7 @@ serial_available:
 ; response timeouts in zp_temp3/zp_temp4 survive a call into the receiver.
 recv_wait_lo: !byte 0
 recv_wait_hi: !byte 0
+rx_shift:     !byte 0
 
 ; Start the free-running bit clock, phase-aligned to now.
 ; Clobbers: A

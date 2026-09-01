@@ -16,7 +16,8 @@ transport_init:
 ti_userport:
         lda #TRANSPORT_USERPORT
         sta zp_transport
-        jmp serial_init
+        jsr serial_init
+        jmp serial_rx_init
 
 ; Input: zp_ptr1 -> HOST:PORT. Returns A=0 on success.
 transport_connect:
@@ -53,6 +54,9 @@ transport_send_frame:
         beq tsf_serial
         jmp ultimate_send_frame
 tsf_serial:
+        ; The receive interrupt has nothing to do while we are driving the
+        ; line, and letting it fire mid-frame would cost transmit timing.
+        jsr serial_rx_disable
         sei                     ; One frame, one uninterrupted burst.
         ldx #0
 tsf_tx_loop:
@@ -62,6 +66,7 @@ tsf_tx_loop:
         cpx #RUBP_MSG_SIZE
         bne tsf_tx_loop
         cli
+        jsr serial_rx_enable
         lda #0
         rts
 
@@ -70,14 +75,13 @@ transport_available:
         beq ta_serial
         jmp ultimate_available
 ta_serial:
-        jmp serial_available
+        jmp serial_rx_ready
 
 transport_receive_frame:
         lda zp_transport
         beq trf_serial
         jmp ultimate_receive_frame
 trf_serial:
-        sei
 
         ; Resynchronise on the frame magic rather than trusting the stream to
         ; stay aligned. A bit-banged UART loses or gains a byte from time to
@@ -93,7 +97,7 @@ trf_serial:
 
         ldx #0                  ; bytes of the magic matched so far
 trf_sync:
-        jsr serial_recv_byte
+        jsr trf_next_byte
         bcc trf_timeout
         cmp rubp_magic,x
         beq trf_advance
@@ -114,13 +118,12 @@ trf_advance:
 
         ; Header magic in hand; the rest of the frame follows it.
 trf_rx_loop:
-        jsr serial_recv_byte
+        jsr trf_next_byte
         bcc trf_timeout
         sta SERIAL_RX_BUF,x
         inx
         cpx #RUBP_MSG_SIZE
         bcc trf_rx_loop
-        cli
         lda #0
         rts
 
@@ -128,11 +131,43 @@ trf_rx_loop:
         ; such and let the caller come back round; the magic scan re-aligns on
         ; whatever arrives next.
 trf_timeout:
-        cli
         lda #1
         rts
 
 trf_scan_left:
+        !byte 0
+
+; -----------------------------------------------------------------------------
+; Next byte of a frame, from the ring the interrupt handler fills.
+; Out: A = byte, C set. C clear when nothing arrived in time.
+;
+; Reading from the ring rather than the wire is what lets everything above this
+; take as long as it likes: bytes keep arriving while the client is drawing.
+; Clobbers: A, X
+; -----------------------------------------------------------------------------
+trf_next_byte:
+        lda #<TRF_BYTE_WAIT
+        sta trf_wait_lo
+        lda #>TRF_BYTE_WAIT
+        sta trf_wait_hi
+.tnb_poll:
+        jsr serial_rx_get
+        bcs .tnb_got
+        dec trf_wait_lo
+        bne .tnb_poll
+        dec trf_wait_hi
+        bne .tnb_poll
+        clc                     ; nothing arrived; caller abandons the frame
+        rts
+.tnb_got:
+        rts
+
+; Roughly a byte time and a half of patience per byte, in poll passes.
+TRF_BYTE_WAIT = 1200
+
+trf_wait_lo:
+        !byte 0
+trf_wait_hi:
         !byte 0
 
 rubp_magic:
