@@ -52,6 +52,9 @@ OBSERVED_SPEC   = $c304         ; 2 bytes, big-endian as received
 SERVER_SYNC_ACK = $c306         ; Host accepted the sync-ACK negotiation
 GAME_STATE_FRESH = $c307        ; A GAME_STATE arrived and is not yet acknowledged
 
+; Test builds only: one action per TURN_START, so autoplay cannot spam the host.
+AUTOPLAY_WAITING = $c308
+
 ; -----------------------------------------------------------------------------
 ; Buffer Size Constants
 ; -----------------------------------------------------------------------------

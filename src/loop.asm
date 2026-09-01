@@ -18,8 +18,14 @@ game_loop:
         ; Check for network messages
         jsr check_network
 
+!if E2E_AUTOPLAY = 0 {
         ; Check for keyboard input
         jsr check_input
+}
+!if E2E_AUTOPLAY {
+        ; Test builds take their turn from the move policy instead.
+        jsr autoplay_turn
+}
 
         ; Small delay to avoid burning CPU
         ldx #$20
@@ -94,6 +100,11 @@ check_network:
         lda SERIAL_RX_BUF+PAYLOAD_START
         sta zp_current_turn
         jsr draw_status
+!if E2E_AUTOPLAY {
+        ; A new turn releases exactly one autoplay action.
+        lda #0
+        sta AUTOPLAY_WAITING
+}
         rts
 
 .cn_player_won:
