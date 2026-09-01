@@ -5,7 +5,15 @@
 TRANSPORT_USERPORT = 0
 TRANSPORT_ULTIMATE = 1
 
+; Set once the peer has closed the connection. Only the Ultimate transport can
+; tell: the user port has no carrier detect wired, so a modem session still ends
+; the way it always has, by falling quiet.
+transport_link_down:
+        !byte 0
+
 transport_init:
+        lda #0
+        sta transport_link_down
         jsr ultimate_detect
         bne ti_userport
         lda #TRANSPORT_ULTIMATE

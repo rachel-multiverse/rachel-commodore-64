@@ -38,6 +38,15 @@ solo-selftest:
 	@printf 'E2E_AUTOPLAY = 0\nSOLO_SELFTEST = 0\n' > $(FLAGS)
 	python3 tests/solo_selftest.py
 
+# Prove a host that hangs up is recognised as a close rather than waited on.
+# Needs no server of its own: the check brings up a socket that drops whatever
+# connects to it.
+link-loss:
+	@mkdir -p build
+	@printf 'E2E_AUTOPLAY = 0\nSOLO_SELFTEST = 0\n' > $(FLAGS)
+	$(ASM198X) --dialect acme --prg -I . --sym=build/linkloss.sym $(SRC) -o build/rachel-linkloss.prg
+	python3 tests/link_loss.py
+
 # Play a complete game against the Go server through the emulated user-port
 # ESP-AT modem. Needs rachel-server and an Emu198x build.
 e2e-full-game: e2e-prg
@@ -74,4 +83,4 @@ test: $(OUT)
 	python3 tests/test_transport.py
 
 .PHONY: all test run test-net conformance reference-parity clean report \
-	e2e-prg e2e-full-game solo-selftest
+	e2e-prg e2e-full-game solo-selftest link-loss
