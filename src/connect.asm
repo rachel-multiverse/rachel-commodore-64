@@ -158,16 +158,28 @@ do_connect:
         sta zp_ptr1+1
         jsr rubp_send_hello
 
-        ; Wait for WELCOME
+        ; Wait for WELCOME, stepping over anything the host sends ahead of it.
+        ; A host may announce the lobby or list players first, and the protocol
+        ; never promised WELCOME would be the very next frame on the wire.
+        ; Treating whatever arrives first as fatal makes the handshake depend
+        ; on message ordering instead of message content.
+        lda #24                 ; bounded, so a silent host still gives up
+        sta cw_frames_left
+.cw_wait:
         jsr rubp_receive
         cmp #0
         bne .connect_fail
         jsr rubp_validate
-        bne .connect_fail       ; Invalid message
+        bne .cw_next            ; a damaged frame is skipped, not fatal
 
         jsr rubp_get_type
         cmp #MSG_WELCOME
-        bne .connect_fail       ; Not WELCOME
+        beq .cw_have_welcome
+.cw_next:
+        dec cw_frames_left
+        bne .cw_wait
+        beq .connect_fail
+.cw_have_welcome:
 
         ; Parse WELCOME
         jsr rubp_parse_welcome
@@ -191,6 +203,9 @@ do_connect:
         jsr show_status_failed
         lda #1
         rts
+
+cw_frames_left:
+        !byte 0
 
 player_name:
         !text "C64 PLAYER"

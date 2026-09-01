@@ -46,8 +46,17 @@ HDR_TYPE        = 5             ; 1 byte
 HDR_SEQUENCE    = 6             ; 2 bytes (big-endian)
 HDR_PLAYER_ID   = 8             ; 2 bytes (big-endian)
 HDR_GAME_ID     = 10            ; 2 bytes (big-endian)
-HDR_TIMESTAMP   = 12            ; 4 bytes (big-endian)
+HDR_TIMESTAMP   = 12            ; v1: 4 bytes. v2: 2 bytes, then the CRC.
+HDR_CRC         = 14            ; v2 only: CRC-16/CCITT-FALSE, big-endian
 PAYLOAD_START   = 16            ; Payload begins here
+
+; Transport version. v1 has no integrity field and every byte that arrives is
+; believed; v2 spends two header bytes on a CRC so a corrupted frame is dropped
+; instead of acted on. On a bit-banged link corruption is the ordinary case,
+; not the exception — the VIC-20 client discards between 37 and 74 frames in a
+; game it completes cleanly — so v1 is not a safe choice here. The host follows
+; whichever version the HELLO header uses, per connection.
+RUBP_VERSION    = $02
 
 ; -----------------------------------------------------------------------------
 ; Platform ID (C64 = 0x0002)
@@ -101,7 +110,7 @@ rubp_build_header:
         sta SERIAL_TX_BUF+HDR_MAGIC+3
 
         ; Version
-        lda #$01
+        lda #RUBP_VERSION
         sta SERIAL_TX_BUF+HDR_VERSION
 
         ; Message type
@@ -139,7 +148,71 @@ rubp_build_header:
 ; Send TX buffer as complete 64-byte message
 ; -----------------------------------------------------------------------------
 rubp_send:
+        jsr rubp_finalize
         jmp transport_send_frame
+
+; -----------------------------------------------------------------------------
+; Stamp the outgoing frame's CRC. Computed over all 64 bytes with the CRC field
+; itself zeroed, which is what the receiver reproduces.
+; Clobbers: A, X, Y, zp_ptr2
+; -----------------------------------------------------------------------------
+rubp_finalize:
+        lda #0
+        sta SERIAL_TX_BUF+HDR_CRC
+        sta SERIAL_TX_BUF+HDR_CRC+1
+        lda #<SERIAL_TX_BUF
+        sta zp_ptr2
+        lda #>SERIAL_TX_BUF
+        sta zp_ptr2+1
+        jsr rubp_crc16
+        lda rubp_crc_hi
+        sta SERIAL_TX_BUF+HDR_CRC
+        lda rubp_crc_lo
+        sta SERIAL_TX_BUF+HDR_CRC+1
+        rts
+
+; -----------------------------------------------------------------------------
+; CRC-16/CCITT-FALSE over the 64-byte frame at zp_ptr2.
+; poly $1021, init $FFFF, no reflection, xorout $0000 ("123456789" -> $29B1).
+; Out: rubp_crc_hi:rubp_crc_lo. Clobbers: A, X, Y.
+; -----------------------------------------------------------------------------
+rubp_crc16:
+        lda #$ff
+        sta rubp_crc_hi
+        sta rubp_crc_lo
+        ldy #0
+.rc_byte:
+        lda (zp_ptr2),y
+        eor rubp_crc_hi
+        sta rubp_crc_hi
+        ldx #8
+.rc_bit:
+        lda rubp_crc_hi
+        and #$80
+        sta rubp_crc_msb
+        asl rubp_crc_lo
+        rol rubp_crc_hi
+        lda rubp_crc_msb
+        beq .rc_no_poly
+        lda rubp_crc_lo
+        eor #$21
+        sta rubp_crc_lo
+        lda rubp_crc_hi
+        eor #$10
+        sta rubp_crc_hi
+.rc_no_poly:
+        dex
+        bne .rc_bit
+        iny
+        cpy #RUBP_MSG_SIZE
+        bne .rc_byte
+        rts
+
+rubp_crc_hi:  !byte 0
+rubp_crc_lo:  !byte 0
+rubp_crc_msb: !byte 0
+rubp_rx_crc_hi: !byte 0
+rubp_rx_crc_lo: !byte 0
 
 ; -----------------------------------------------------------------------------
 ; Receive 64-byte message into RX buffer (blocking)
@@ -164,10 +237,48 @@ rubp_validate:
         lda SERIAL_RX_BUF+HDR_MAGIC+3
         cmp #'H'
         bne .invalid
+        ; Accept either transport version: the host answers in whichever the
+        ; HELLO selected, but a lobby may hold both and a stray v1 frame is
+        ; better skipped than treated as a framing failure.
         lda SERIAL_RX_BUF+HDR_VERSION
         cmp #$01
+        beq .valid              ; v1 carries no integrity field to check
+        cmp #$02
         bne .invalid
 
+        ; v2: the CRC is computed over the whole frame with its own two bytes
+        ; zeroed, so stash them, recompute, and compare. A frame that fails
+        ; here is dropped before its type, identifiers or payload are read —
+        ; believing a corrupted GAME_STATE is how a client ends up playing
+        ; against a table that never existed.
+        lda SERIAL_RX_BUF+HDR_CRC
+        sta rubp_rx_crc_hi
+        lda SERIAL_RX_BUF+HDR_CRC+1
+        sta rubp_rx_crc_lo
+        lda #0
+        sta SERIAL_RX_BUF+HDR_CRC
+        sta SERIAL_RX_BUF+HDR_CRC+1
+
+        lda #<SERIAL_RX_BUF
+        sta zp_ptr2
+        lda #>SERIAL_RX_BUF
+        sta zp_ptr2+1
+        jsr rubp_crc16
+
+        ; Put the frame back the way it arrived, whatever the verdict.
+        lda rubp_rx_crc_hi
+        sta SERIAL_RX_BUF+HDR_CRC
+        lda rubp_rx_crc_lo
+        sta SERIAL_RX_BUF+HDR_CRC+1
+
+        lda rubp_crc_hi
+        cmp rubp_rx_crc_hi
+        bne .invalid
+        lda rubp_crc_lo
+        cmp rubp_rx_crc_lo
+        bne .invalid
+
+.valid:
         lda #0                  ; Valid - set Z flag
         rts
 
@@ -288,6 +399,11 @@ rubp_parse_game_state:
         ; Pending draws (payload+4)
         lda SERIAL_RX_BUF+PAYLOAD_START+4
         sta PENDING_DRAWS
+
+        ; Pending skips (payload+5). Declared since the first cut but never
+        ; filled in, so nothing could tell a live skip from a quiet turn.
+        lda SERIAL_RX_BUF+PAYLOAD_START+5
+        sta PENDING_SKIPS
 
         ; Deck count (payload+6)
         lda SERIAL_RX_BUF+PAYLOAD_START+6
