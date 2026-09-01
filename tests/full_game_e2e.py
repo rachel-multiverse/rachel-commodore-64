@@ -28,12 +28,10 @@ AI_PLAYERS = int(os.environ.get("RACHEL_E2E_AI_PLAYERS", "1"))
 GAME_FRAMES = int(os.environ.get("RACHEL_E2E_GAME_FRAMES", "120000"))
 WRITE_INTERVAL = os.environ.get("RACHEL_E2E_WRITE_INTERVAL", "0")
 MODEL = os.environ.get("RACHEL_E2E_MODEL", "pal").lower()
-# The client's bit delay is sized for 2400 baud at a nominal 1MHz, but the
-# VIC-II steals CPU cycles for its badlines, so each bit occupies more real
-# time than the delay loop counts. Measured against this client, the line runs
-# at about 2100 baud; the modem is set to match so the harness exercises the
-# protocol rather than a decode failure. See docs/SERIAL_TIMING.md.
-BAUD = int(os.environ.get("RACHEL_E2E_BAUD", "2100"))
+# The client times its bits from a CIA timer rather than a counted loop, so it
+# holds a real 2400 baud regardless of what the VIC-II is doing. No fudge
+# factor: this is the rate a physical modem would be set to.
+BAUD = int(os.environ.get("RACHEL_E2E_BAUD", "2400"))
 PORT = int(os.environ.get("RACHEL_E2E_PORT", "6502"))
 
 

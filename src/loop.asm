@@ -13,10 +13,13 @@
 game_loop:
         ; Initial draw
         jsr redraw_game
+        jsr gl_reset_watchdog
 
 .gl_main:
         ; Check for network messages
         jsr check_network
+        jsr gl_draw_if_quiet
+        jsr gl_watchdog
 
 !if E2E_AUTOPLAY = 0 {
         ; Check for keyboard input
@@ -35,6 +38,82 @@ game_loop:
         jmp .gl_main
 
 ; -----------------------------------------------------------------------------
+; Ask the host to resend the authoritative state when the line has gone quiet.
+;
+; This client reads the wire only while it happens to be looking. It has no
+; receive buffer, so a frame that arrives while it is redrawing the screen is
+; simply gone — and the one that matters is HAND_SYNC, because the host will
+; not release TURN_START until it is acknowledged. Lose that one frame and both
+; sides wait for each other: the host for an acknowledgement, the client for a
+; turn that will never come.
+;
+; A SYNC_REQUEST costs one frame and makes the host resend the pair, which is
+; the recovery the client guide prescribes for exactly this case. The watchdog
+; is deliberately long: it should fire when a frame was lost, not race a host
+; that is merely thinking.
+; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; Redrawing is hundreds of KERNAL calls, and the host sends GAME_STATE and
+; HAND_SYNC back to back. Redrawing the moment GAME_STATE lands means the
+; client is still painting when HAND_SYNC arrives, and with no receive buffer
+; that frame is gone — every time, not occasionally. The host then waits for an
+; acknowledgement of a pair the client only ever saw half of.
+;
+; So handlers ask for a redraw and the loop performs it only once the wire is
+; quiet. Nothing slow happens between two frames the host sends together.
+; -----------------------------------------------------------------------------
+gl_want_redraw:
+        lda #1
+        sta gl_redraw_pending
+        rts
+
+gl_draw_if_quiet:
+        lda gl_redraw_pending
+        beq .gd_done
+        jsr transport_available
+        beq .gd_done            ; a frame is arriving; painting can wait
+        lda #0
+        sta gl_redraw_pending
+        jmp redraw_game
+.gd_done:
+        rts
+
+gl_redraw_pending:
+        !byte 0
+
+GL_WATCHDOG_PASSES = 2000
+
+gl_watchdog:
+        lda gl_quiet_lo
+        bne .gw_tick_lo
+        lda gl_quiet_hi
+        beq .gw_fire
+        dec gl_quiet_hi
+.gw_tick_lo:
+        dec gl_quiet_lo
+        rts
+
+.gw_fire:
+        jsr gl_reset_watchdog
+        lda SERVER_SYNC_ACK
+        beq .gw_done            ; host is not gating turns; nothing to recover
+        jmp rubp_send_sync_request
+.gw_done:
+        rts
+
+gl_reset_watchdog:
+        lda #<GL_WATCHDOG_PASSES
+        sta gl_quiet_lo
+        lda #>GL_WATCHDOG_PASSES
+        sta gl_quiet_hi
+        rts
+
+gl_quiet_lo:
+        !byte 0
+gl_quiet_hi:
+        !byte 0
+
+; -----------------------------------------------------------------------------
 ; Check for incoming network messages
 ; -----------------------------------------------------------------------------
 check_network:
@@ -47,6 +126,7 @@ check_network:
         bne .cn_done
         jsr rubp_validate
         bne .cn_done            ; Invalid message
+        jsr gl_reset_watchdog
 
         ; Handle based on message type
         jsr rubp_get_type
@@ -75,17 +155,15 @@ check_network:
 
 .cn_game_state:
         jsr rubp_parse_game_state
-        jsr redraw_game
-        rts
+        jmp gl_want_redraw
 
 .cn_card_drawn:
         jsr rubp_parse_card_drawn
-        jsr draw_hand
-        rts
+        jmp gl_want_redraw
 
 .cn_hand_sync:
         jsr rubp_parse_game_start
-        jsr draw_hand
+        jsr gl_want_redraw
         ; HAND_SYNC completes the recovery pair, so this is where the host is
         ; waiting. Only answer when it negotiated the capability: an ACK flag
         ; sent to a host that did not is read as a plain resync request, and
@@ -99,7 +177,7 @@ check_network:
         ; Current player is in payload+0
         lda SERIAL_RX_BUF+PAYLOAD_START
         sta zp_current_turn
-        jsr draw_status
+        jsr gl_want_redraw
 !if E2E_AUTOPLAY {
         ; A new turn releases exactly one autoplay action.
         lda #0
@@ -117,9 +195,19 @@ check_network:
         rts
 
 .cn_error:
-        ; Display error message and continue
+        ; The host rejected the action. Retrying against the same local view
+        ; would be rejected the same way: the reason the action was wrong is
+        ; that this client is looking at a stale table. Ask for the
+        ; authoritative state instead, which is what the client guide requires
+        ; of an ERROR — never retry a stale action blindly.
         jsr show_error_msg
-        rts
+        jsr clear_selected_cards
+!if E2E_AUTOPLAY {
+        ; Let the move policy try again once fresh state arrives.
+        lda #0
+        sta AUTOPLAY_WAITING
+}
+        jmp rubp_send_sync_request
 
 ; -----------------------------------------------------------------------------
 ; Check for keyboard input

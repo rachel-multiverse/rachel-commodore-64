@@ -168,7 +168,7 @@ do_connect:
 .cw_wait:
         jsr rubp_receive
         cmp #0
-        bne .connect_fail
+        bne .cw_next            ; nothing finished arriving; try again
         jsr rubp_validate
         bne .cw_next            ; a damaged frame is skipped, not fatal
 
@@ -226,10 +226,13 @@ wait_for_game:
         jsr transport_available
         bne .wfg_loop           ; No data
 
-        ; Got data - receive full message
+        ; Got data - receive full message. A frame that does not finish arriving
+        ; is not a reason to give up on the game: the line going quiet part way
+        ; through says nothing about whether the host is still there. Keep
+        ; waiting, and let the magic scan re-align on whatever comes next.
         jsr rubp_receive
         cmp #0
-        bne .wfg_cancel
+        bne .wfg_loop
         jsr rubp_validate
         bne .wfg_loop           ; Invalid, keep waiting
 
