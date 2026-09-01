@@ -86,9 +86,15 @@ trf_serial:
         ; even though the host is talking perfectly. Scanning for "RACH" costs
         ; nothing when the stream is clean and recovers by itself when it is
         ; not.
+        ; Bounded, so a stream that dries up mid-scan gives the main loop back
+        ; rather than parking the machine in here with interrupts masked.
+        lda #64
+        sta trf_scan_left
+
         ldx #0                  ; bytes of the magic matched so far
 trf_sync:
         jsr serial_recv_byte
+        bcc trf_timeout
         cmp rubp_magic,x
         beq trf_advance
 
@@ -96,7 +102,10 @@ trf_sync:
         ; it against the first letter before giving up on it entirely.
         ldx #0
         cmp rubp_magic
+        beq trf_advance
+        dec trf_scan_left
         bne trf_sync
+        beq trf_timeout
 trf_advance:
         sta SERIAL_RX_BUF,x
         inx
@@ -106,6 +115,7 @@ trf_advance:
         ; Header magic in hand; the rest of the frame follows it.
 trf_rx_loop:
         jsr serial_recv_byte
+        bcc trf_timeout
         sta SERIAL_RX_BUF,x
         inx
         cpx #RUBP_MSG_SIZE
@@ -113,6 +123,17 @@ trf_rx_loop:
         cli
         lda #0
         rts
+
+        ; A frame that never finished arriving is not a frame. Report it as
+        ; such and let the caller come back round; the magic scan re-aligns on
+        ; whatever arrives next.
+trf_timeout:
+        cli
+        lda #1
+        rts
+
+trf_scan_left:
+        !byte 0
 
 rubp_magic:
         !text "RACH"
