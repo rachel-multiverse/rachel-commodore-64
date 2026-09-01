@@ -13,3 +13,7 @@ build/*.txt
 
 # Keep build directory but not contents
 !build/.gitkeep
+build/*.asm
+build/*.sym
+build/*.json
+build/e2e-output/
