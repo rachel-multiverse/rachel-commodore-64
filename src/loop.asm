@@ -18,6 +18,7 @@ game_loop:
 .gl_main:
         ; Check for network messages
         jsr check_network
+        jsr gl_check_link
         jsr gl_draw_if_quiet
         jsr gl_watchdog
 
@@ -100,6 +101,30 @@ gl_watchdog:
         jmp rubp_send_sync_request
 .gw_done:
         rts
+
+; A connection the host closed ends the session. This client does not
+; reconnect — ADR 0002 — so it says so and goes back to the start screen rather
+; than polling a socket that will never answer again.
+gl_check_link:
+        lda transport_link_down
+        beq .gcl_done
+        ldx #3
+        ldy #12
+        clc
+        jsr PLOT
+        lda #<txt_link_lost
+        sta zp_ptr1
+        lda #>txt_link_lost
+        sta zp_ptr1+1
+        jsr screen_print
+        jsr input_wait_key
+        jmp start
+.gcl_done:
+        rts
+
+txt_link_lost:
+        !text "CONNECTION LOST - PRESS A KEY"
+        !byte 0
 
 gl_reset_watchdog:
         lda #<GL_WATCHDOG_PASSES

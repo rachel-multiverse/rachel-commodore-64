@@ -19,6 +19,15 @@ UCI_DATA_ACCEPT = $02
 UCI_ABORT       = $04
 UCI_CLEAR_ERROR = $08
 
+; Status classes returned by uci_status_code. The network target answers in
+; ASCII — "00,OK", "01,CONNECTION CLOSED BY HOST", "02,NO DATA" and a spread
+; of 8x codes for bad parameters. Only the two leading digits may be matched:
+; the firmware appends an errno to several of the lines.
+UCI_ST_OK       = 0
+UCI_ST_CLOSED   = 1
+UCI_ST_NO_DATA  = 2
+UCI_ST_ERROR    = 3
+
 UCI_TARGET_NET  = $03
 UCI_OPEN_TCP    = $07
 UCI_CLOSE       = $09
@@ -139,17 +148,30 @@ ua_ready:
         lda #0
         rts
 
+; Blocking, but not unconditionally: the handshake calls this without first
+; asking whether anything is waiting, so a host that hangs up mid-frame would
+; otherwise park the machine in here for good.
 ultimate_receive_frame:
 urf_wait:
         jsr ultimate_available
-        bne urf_wait
+        beq urf_ready
+        lda transport_link_down
+        beq urf_wait
+        lda #1                  ; the peer went away; there is no frame coming
+        rts
+urf_ready:
         lda #0
         sta zp_rx_head
         rts
 
 ultimate_read_chunk:
         jsr uci_begin
-        bne ur_failed
+        beq ur_begin_ok
+        ; Near copy of the failure exit: the routine grew past a branch's reach.
+ur_fail_near:
+        lda #1
+        rts
+ur_begin_ok:
         lda #UCI_TARGET_NET
         sta UCI_COMMAND
         lda #UCI_READ
@@ -159,14 +181,43 @@ ultimate_read_chunk:
         lda #RUBP_MSG_SIZE
         sec
         sbc zp_rx_head
-        sta zp_temp1            ; requested count
-        sta UCI_COMMAND
+        sta UCI_COMMAND         ; requested count, low
         lda #0
-        sta UCI_COMMAND
+        sta UCI_COMMAND         ; requested count, high
         jsr uci_execute
-        bne ur_failed
+        bne ur_fail_near
 
-        ; Response begins with actual length (little endian), then bytes.
+        ; Classify the status before touching the response. READ never answers
+        ; "00,OK" with an empty payload: a poll that found nothing answers
+        ; "02,NO DATA" and leads the response with recv's -1, so the length is
+        ; a count only once the status says it is. Demanding "00" here would
+        ; report a fault on every quiet poll of real hardware.
+        jsr uci_status_code
+        cmp #UCI_ST_OK
+        beq ur_have_data
+        cmp #UCI_ST_NO_DATA
+        beq ur_quiet
+        cmp #UCI_ST_CLOSED
+        beq ur_closed
+        jmp ur_failed_accept    ; a parameter was refused
+
+        ; The host hung up. The firmware announces that exactly once — the
+        ; socket is dead afterwards and later polls only report no data — so
+        ; the fact is latched here rather than left to be noticed again.
+ur_closed:
+        lda #1
+        sta transport_link_down
+        jmp ur_failed_accept
+
+        ; Nothing had arrived. The buffer is untouched and the caller simply
+        ; has no frame yet, which is the normal state of an idle connection.
+ur_quiet:
+        jsr uci_drain_data
+        jsr uci_accept
+        lda #0
+        rts
+
+ur_have_data:
         lda UCI_CONTROL
         and #UCI_DATA_AV
         beq ur_failed_accept
@@ -174,12 +225,12 @@ ultimate_read_chunk:
         sta zp_temp2
         lda UCI_RESPONSE
         bne ur_failed_accept
-        lda zp_temp2
-        cmp zp_temp1
-        bcc ur_count_ok
-        beq ur_count_ok
-        bcs ur_failed_accept
-ur_count_ok:
+        ; Refuse more than there is room for rather than run off the buffer.
+        lda #RUBP_MSG_SIZE
+        sec
+        sbc zp_rx_head
+        cmp zp_temp2
+        bcc ur_failed_accept
         ldx zp_rx_head
         ldy #0
 ur_copy:
@@ -196,12 +247,11 @@ ur_copy:
 ur_copied:
         stx zp_rx_head
         jsr uci_drain_data
-        jsr uci_status_ok
-        pha
         jsr uci_accept
-        pla
+        lda #0
         rts
 ur_failed_accept:
+        jsr uci_drain_data
         jsr uci_accept
 ur_failed:
         lda #1
@@ -353,39 +403,61 @@ uci_drain_data:
 udd_done:
         rts
 
-; Drain the textual status and accept only a leading "00".
-uci_status_ok:
+; Drain the textual status and classify its leading two digits.
+uci_status_code:
         lda #$ff
         sta zp_temp1
         sta zp_temp2
         ldx #0
-uso_loop:
+usc_loop:
         lda UCI_CONTROL
         and #UCI_STATUS_AV
-        beq uso_done
+        beq usc_done
         lda UCI_STATUS_DATA
         cpx #0
-        bne uso_second
+        bne usc_second
         sta zp_temp1
         inx
-        jmp uso_loop
-uso_second:
+        jmp usc_loop
+usc_second:
         cpx #1
-        bne uso_loop
+        bne usc_loop
         sta zp_temp2
         inx
-        jmp uso_loop
-uso_done:
+        jmp usc_loop
+usc_done:
         lda zp_temp1
         cmp #'0'
-        bne uso_failed
+        bne usc_error
         lda zp_temp2
         cmp #'0'
-        bne uso_failed
-        lda #0
+        beq usc_ok
+        cmp #'1'
+        beq usc_closed
+        cmp #'2'
+        beq usc_no_data
+usc_error:
+        lda #UCI_ST_ERROR
         rts
-uso_failed:
+usc_ok:
+        lda #UCI_ST_OK
+        rts
+usc_closed:
+        lda #UCI_ST_CLOSED
+        rts
+usc_no_data:
+        lda #UCI_ST_NO_DATA
+        rts
+
+; Accept only a leading "00". A=0/Z=1 on success.
+uci_status_ok:
+        jsr uci_status_code
+        cmp #UCI_ST_OK
+        beq uso_ok
         lda #1
+        rts
+uso_ok:
+        lda #0
         rts
 
 uci_accept:
