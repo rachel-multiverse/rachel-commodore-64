@@ -120,29 +120,26 @@ cmd_z:
 ; Clobbers: A, X, Y, zp_temp1-4
 ; -----------------------------------------------------------------------------
 modem_dial:
-        ; Save IP string pointer
-        lda zp_ptr1
-        sta zp_temp1
-        lda zp_ptr1+1
-        sta zp_temp2
-
-        ; Send "AT"
+        ; zp_ptr1 already points at HOST:PORT, and serial_send_byte leaves it
+        ; alone, so there is nothing to save here. The previous version parked
+        ; the pointer in zp_temp1 — the very byte serial_send_byte overwrites
+        ; with each character it sends — so by the time the address was wanted
+        ; the low byte had become the last character sent, and the modem was
+        ; dialled with whatever bytes happened to live at that address. In this
+        ; build that was the client's own machine code.
         lda #'A'
         jsr serial_send_byte
         lda #'T'
         jsr serial_send_byte
 
-        ; Send "DT" (dial tone - works for TCP too)
+        ; "DT" - the tone/pulse distinction is meaningless over TCP, and
+        ; Zimodem treats ATD, ATDT and ATDI alike.
         lda #'D'
         jsr serial_send_byte
         lda #'T'
         jsr serial_send_byte
 
         ; Send host:port
-        lda zp_temp1
-        sta zp_ptr1
-        lda zp_temp2
-        sta zp_ptr1+1
         jsr serial_send_string
 
         ; Send CR
@@ -158,6 +155,8 @@ modem_dial:
 ; Clobbers: A, X, Y, zp_temp3, zp_temp4
 ; -----------------------------------------------------------------------------
 modem_wait_connect:
+        ; The reply arrives as one burst, so hold the mask across all of it.
+        sei
         ; Initialize timeout counter
         lda #0
         sta zp_temp3
@@ -193,14 +192,17 @@ modem_wait_connect:
 .mwc_success:
         ; Drain rest of response line
         jsr modem_drain_line
+        cli
         lda #0                  ; Connected!
         rts
 
 .mwc_fail:
+        cli
         lda #1                  ; Failed
         rts
 
 .mwc_timeout:
+        cli
         lda #1                  ; Timeout = failed
         rts
 
