@@ -43,10 +43,44 @@ ENC_PRG = os.path.join(BUILD, "encoders.prg")
 ENC_SLOTS = {"hello": 0xC000, "play_card": 0xC040, "draw_card": 0xC080}
 ENC_DONE = 0xC0FF
 
+# Every outgoing frame differs from the v1 golden vectors in the same three
+# bytes, because this client speaks RUBP v2: the version, and the CRC that
+# replaces the low half of v1's timestamp. These are annotated rather than
+# treated as faults, and then checked properly below — the CRC is recomputed
+# here from the frame the client actually built, so a wrong one fails loudly
+# instead of being waved through as "expected to differ".
+V2_TRANSPORT_BYTES = {
+    4:  ("OK-TRANSPORT", "RUBP v2 header; the v1 fixture predates the CRC"),
+    14: ("OK-TRANSPORT", "RUBP v2 CRC high byte (v1 timestamp here); verified below"),
+    15: ("OK-TRANSPORT", "RUBP v2 CRC low byte (v1 timestamp here); verified below"),
+}
+
+
+def crc16_ccitt_false(data: bytes) -> int:
+    """poly 0x1021, init 0xFFFF, no reflection, xorout 0 ("123456789" -> 0x29B1)."""
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
+    return crc
+
+
+def check_frame_crc(name: str, frame: bytes) -> str | None:
+    """Return a complaint when a v2 frame's CRC is not the one it should carry."""
+    if frame[4] != 0x02:
+        return None
+    carried = (frame[14] << 8) | frame[15]
+    expected = crc16_ccitt_false(frame[:14] + b"\x00\x00" + frame[16:])
+    if carried != expected:
+        return f"{name}: CRC is {carried:#06x}, expected {expected:#06x}"
+    return None
+
 # Per-message, per-offset explanations for known differences from the golden
 # vectors. Anything that differs and is NOT listed here is reported UNEXPECTED.
 KNOWN = {
     "hello": {
+        **V2_TRANSPORT_BYTES,
         33: ("OK-PLATFORM", "platform ID 0x0002 (C64) vs fixture's 0x0031 (iOS)"),
         # specVersion (34/35) is now emitted; reconnectToken stays a gap — this
         # client does not reclaim slots, so it sends a zero token (decision 0002).
@@ -57,10 +91,11 @@ KNOWN = {
         # consecutive frames. Advertising more than the fixture is conformant.
         52: ("OK-CAPABILITY", "advertises CAP_SYNC_ACK; fixture client does not"),
     },
-    "play_card": {},
-    "draw_card": {},
+    "play_card": {**V2_TRANSPORT_BYTES},
+    "draw_card": {**V2_TRANSPORT_BYTES},
 }
 FAIL_STATUSES = {"BUG", "UNEXPECTED"}
+
 
 # ---- Decoder harness (decoders.asm) -----------------------------------------
 DEC_PRG = os.path.join(BUILD, "decoders.prg")
@@ -141,6 +176,10 @@ def check_encoders(fixtures):
     failed = False
     for name in ENC_SLOTS:
         produced, gold = bytes(got[name]), golden(fixtures, name)
+        crc_complaint = check_frame_crc(name, produced)
+        if crc_complaint:
+            print(f"== {name:<10} FAIL ==\n   {crc_complaint}\n")
+            failed = True
         known = KNOWN.get(name, {})
         diffs = [i for i in range(64) if produced[i] != gold[i]]
         statuses = [(i, *known.get(i, ("UNEXPECTED", "no explanation on file"))) for i in diffs]
