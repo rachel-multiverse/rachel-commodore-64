@@ -82,9 +82,6 @@ KNOWN = {
     "hello": {
         **V2_TRANSPORT_BYTES,
         33: ("OK-PLATFORM", "platform ID 0x0002 (C64) vs fixture's 0x0031 (iOS)"),
-        # specVersion (34/35) is now emitted; reconnectToken stays a gap — this
-        # client does not reclaim slots, so it sends a zero token (decision 0002).
-        **{o: ("GAP", "reconnectToken not emitted (no reconnect support)") for o in range(36, 44)},
         # Capabilities (payload+36). We advertise CAP_SYNC_ACK so the host holds
         # TURN_START until we acknowledge the GAME_STATE + HAND_SYNC pair; the
         # iOS fixture does not negotiate it, being a client that can buffer

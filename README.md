@@ -14,6 +14,13 @@ The two never mix. Online, the host is authoritative and the client renders
 what it is told; the local kernel is not consulted about legality. That is the
 line decision 0003 draws and decision 0006 leaves in place.
 
+## Verification status
+
+This is a development build. See [the verification record](docs/STATUS.md) for
+checks run against this revision and the remaining hardware limitations. Solo
+play needs no network hardware or server. There is currently no public server
+for online play.
+
 ## Requirements
 
 - [Asm198x](https://github.com/asm198x/asm198x)
@@ -34,16 +41,19 @@ brew install asm198x/tap/asm198x acme vice
 make               # Build rachel.prg
 make test          # Build and verify both real-hardware transport contracts
 make conformance   # Run RUBP codec checks under Emu198x
+make ui-test       # Check rendering, keyboard actions, Ace prompts and results
+make production-ui-test # Exercise the real menu and solo keyboard controls
 make solo-selftest # Play 16 complete solo games under Emu198x, 2-8 seats
 make e2e-full-game # Play a networked game against the Go server
+make reconnect-test # Verify recovery ordering, rejection and retry/menu behaviour
+make reconnect-e2e  # Drop two live connections and verify the restored seat/hand
 make clean         # Remove build artifacts
 ```
 
 ## Standalone play
 
 Answer `S` at the opening prompt and pick a table size. The kernel deals from a
-shuffled deck seeded off the jiffy clock and the raster, so no two games start
-the same, and the opponents play by the same rules you do.
+shuffled deck seeded off the jiffy clock and the raster, to vary the deal between games, and the opponents play by the same rules you do.
 
 `make solo-selftest` plays sixteen complete games headlessly across every table
 size and checks two things after each: that the game actually ended, and that
@@ -65,6 +75,26 @@ have it act a turn behind. Conformance covers that directly, against golden
 fixtures whose `GAME_STATE` and `HAND_SYNC` carry deliberately different
 hashes.
 
+## Reconnecting
+
+During an online game, the client retries a dropped connection automatically.
+It retains the server address and session token in RAM, then asks the server to
+restore the same seat. Input stays paused until the table and private hand have
+been refreshed. Selected cards are cleared; an interrupted move is never replayed.
+
+After three unsuccessful attempts, press `R` to retry or `Q` for the menu.
+Returning to the menu, resetting or reloading starts a new session and discards
+the token. If the server has taken over a disconnected seat with AI, its current
+hand is restored. A stopped/restarted server cannot restore an in-memory game.
+
+Ultimate reports a closed socket directly. The user-port fallback uses a silence
+timeout and Hayes escape/redial. For the 2400-baud modem, run the Go server
+with `serve --vic20-write-interval 300ms`; despite its name, this spacing
+option also applies to C64 serial clients. `make reconnect-userport-e2e` tests
+that configuration. An unpaced serial run reclaimed both drops but stalled
+later, so unpaced modem operation is not verified. See `docs/STATUS.md` for transport-specific
+verification; physical hardware is still unverified.
+
 ## Running in VICE
 
 ```bash
@@ -72,7 +102,10 @@ make run        # Launch in VICE (no network)
 make test-net   # Launch with RS232->TCP bridge
 ```
 
-For network testing, first start an iOS host or test server on port 19840.
+The legacy VICE bridge target connects to localhost:19840. Run a compatible
+Rachel server on that port for this target; the normal server default and the
+end-to-end harness use port 6502. An App Store iOS installation is not a
+public vintage game server.
 
 ## Hardware setup
 

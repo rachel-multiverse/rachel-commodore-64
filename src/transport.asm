@@ -6,8 +6,8 @@ TRANSPORT_USERPORT = 0
 TRANSPORT_ULTIMATE = 1
 
 ; Set once the peer has closed the connection. Only the Ultimate transport can
-; tell: the user port has no carrier detect wired, so a modem session still ends
-; the way it always has, by falling quiet.
+; tell directly. The shared liveness check detects silence on the user port,
+; which has no carrier-detect signal wired.
 transport_link_down:
         !byte 0
 
@@ -83,7 +83,9 @@ transport_available:
         beq ta_serial
         jmp ultimate_available
 ta_serial:
-        jmp serial_rx_ready
+        jsr serial_rx_ready
+        eor #1                  ; transport API: zero means data is available
+        rts
 
 transport_receive_frame:
         lda zp_transport

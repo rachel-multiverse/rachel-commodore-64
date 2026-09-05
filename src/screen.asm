@@ -52,18 +52,45 @@ screen_print:
 ; -----------------------------------------------------------------------------
 screen_print_at:
         clc
-        jsr PLOT                ; Set cursor position
+        jsr screen_goto                ; Set cursor position
         jsr screen_print
         rts
 
 ; -----------------------------------------------------------------------------
 ; Set cursor position
 ; Input: X = column (0-39), Y = row (0-24)
-; Clobbers: A
+; Clobbers: flags
 ; -----------------------------------------------------------------------------
 screen_goto:
+        ; Our callers use X=column, Y=row. KERNAL PLOT expects the reverse.
+        ; Preserve the caller's registers, including the line character in A.
+        pha
+        txa
+        pha
+        tya
+        tax
+        pla
+        tay
         clc
         jsr PLOT
+        tya
+        pha
+        txa
+        tay
+        pla
+        tax
+        pla
+        rts
+
+; Leave column 39 unused: CHROUT there links two physical rows into one
+; logical line (and scrolls on row 24). All table writers use columns 0-38.
+; Input Y=row. Clobbers A,X,Y.
+screen_clear_row:
+        ldx #0
+        jsr screen_goto
+        lda #' '
+        ldx #39
+        jsr screen_repeat_char
         rts
 
 ; -----------------------------------------------------------------------------
@@ -76,10 +103,10 @@ screen_hline:
         sta zp_temp2            ; Save length
 
         clc
-        jsr PLOT                ; Position cursor
+        jsr screen_goto                ; Position cursor
 
         ldx zp_temp2            ; Get length
-        lda #$40                ; PETSCII horizontal line character
+        lda #$60                ; PETSCII horizontal line character
 -
         jsr CHROUT
         dex
@@ -119,7 +146,7 @@ draw_title:
         ldx #12                 ; Column (center "RACHEL V1.0")
         ldy #0                  ; Row 0
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ldx #0
 -
@@ -143,31 +170,31 @@ draw_frame:
         ; Row 1: Top border (below title)
         ldx #0
         ldy #1
-        lda #40
+        lda #39
         jsr screen_hline
 
         ; Row 4: Below player list
         ldx #0
         ldy #4
-        lda #40
+        lda #39
         jsr screen_hline
 
         ; Row 11: Below discard area
         ldx #0
         ldy #11
-        lda #40
+        lda #39
         jsr screen_hline
 
         ; Row 19: Below hand area
         ldx #0
         ldy #19
-        lda #40
+        lda #39
         jsr screen_hline
 
         ; Row 22: Above status line
         ldx #0
         ldy #22
-        lda #40
+        lda #39
         jsr screen_hline
 
         rts
@@ -183,7 +210,7 @@ draw_game_screen:
         ldx #1
         ldy #12
         clc
-        jsr PLOT
+        jsr screen_goto
         ldx #0
 -
         lda txt_your_hand,x
@@ -197,7 +224,7 @@ draw_game_screen:
         ldx #1
         ldy #20
         clc
-        jsr PLOT
+        jsr screen_goto
         ldx #0
 -
         lda txt_controls,x

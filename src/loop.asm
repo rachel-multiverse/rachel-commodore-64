@@ -3,7 +3,7 @@
 ; =============================================================================
 ; Core gameplay loop - handles input, network, and display updates
 ;
-; This is a render-only client: all game logic is on the iOS host.
+; Online play is server-authoritative; this loop does not use the solo kernel.
 ; We send PLAY_CARD/DRAW_CARD actions and receive state updates.
 
 ; =============================================================================
@@ -11,9 +11,13 @@
 ; =============================================================================
 
 game_loop:
+        ; Remove host-entry and lobby prompts before drawing the table.
+        jsr screen_init
+        jsr draw_game_screen
         ; Initial draw
         jsr redraw_game
         jsr gl_reset_watchdog
+        jsr reconnect_mark_response
 
 .gl_main:
         ; Check for network messages
@@ -39,29 +43,10 @@ game_loop:
         jmp .gl_main
 
 ; -----------------------------------------------------------------------------
-; Ask the host to resend the authoritative state when the line has gone quiet.
-;
-; This client reads the wire only while it happens to be looking. It has no
-; receive buffer, so a frame that arrives while it is redrawing the screen is
-; simply gone — and the one that matters is HAND_SYNC, because the host will
-; not release TURN_START until it is acknowledged. Lose that one frame and both
-; sides wait for each other: the host for an acknowledgement, the client for a
-; turn that will never come.
-;
-; A SYNC_REQUEST costs one frame and makes the host resend the pair, which is
-; the recovery the client guide prescribes for exactly this case. The watchdog
-; is deliberately long: it should fire when a frame was lost, not race a host
-; that is merely thinking.
-; -----------------------------------------------------------------------------
-; -----------------------------------------------------------------------------
-; Redrawing is hundreds of KERNAL calls, and the host sends GAME_STATE and
-; HAND_SYNC back to back. Redrawing the moment GAME_STATE lands means the
-; client is still painting when HAND_SYNC arrives, and with no receive buffer
-; that frame is gone — every time, not occasionally. The host then waits for an
-; acknowledgement of a pair the client only ever saw half of.
-;
-; So handlers ask for a redraw and the loop performs it only once the wire is
-; quiet. Nothing slow happens between two frames the host sends together.
+; Ask for fresh authoritative state after a quiet interval. Valid replies reset
+; the liveness deadline, so a player may think without triggering reconnect.
+; Defer expensive redraws until the transport is quiet to avoid overflowing
+; the user-port receive ring during a state/hand burst.
 ; -----------------------------------------------------------------------------
 gl_want_redraw:
         lda #1
@@ -102,29 +87,13 @@ gl_watchdog:
 .gw_done:
         rts
 
-; A connection the host closed ends the session. This client does not
-; reconnect — ADR 0002 — so it says so and goes back to the start screen rather
-; than polling a socket that will never answer again.
 gl_check_link:
+        jsr reconnect_check_silence
         lda transport_link_down
         beq .gcl_done
-        ldx #3
-        ldy #12
-        clc
-        jsr PLOT
-        lda #<txt_link_lost
-        sta zp_ptr1
-        lda #>txt_link_lost
-        sta zp_ptr1+1
-        jsr screen_print
-        jsr input_wait_key
-        jmp start
+        jmp reconnect_session
 .gcl_done:
         rts
-
-txt_link_lost:
-        !text "CONNECTION LOST - PRESS A KEY"
-        !byte 0
 
 gl_reset_watchdog:
         lda #<GL_WATCHDOG_PASSES
@@ -152,6 +121,7 @@ check_network:
         jsr rubp_validate
         bne .cn_done            ; Invalid message
         jsr gl_reset_watchdog
+        jsr reconnect_mark_response
 
         ; Handle based on message type
         jsr rubp_get_type
@@ -242,11 +212,13 @@ check_input:
         beq .ci_done            ; No key pressed
 
         ; Check if it's our turn
+        tax                     ; preserve GETIN result while checking the turn
         lda zp_current_turn
         cmp zp_my_index
         bne .ci_not_turn        ; Not our turn
 
-        ; It's our turn - handle input
+        ; It's our turn - handle the saved key.
+        txa
         cmp #$1d                ; Cursor Right
         beq .ci_right
         cmp #$9d                ; Cursor Left
@@ -267,6 +239,8 @@ check_input:
         rts
 
 .ci_right:
+        lda zp_hand_count
+        beq .ci_done
         ; Move cursor right
         inc zp_cursor_pos
         lda zp_cursor_pos
@@ -277,6 +251,8 @@ check_input:
         jmp .ci_update_hand
 
 .ci_left:
+        lda zp_hand_count
+        beq .ci_done
         ; Move cursor left
         dec zp_cursor_pos
         bpl .ci_update_hand
@@ -287,6 +263,8 @@ check_input:
         jmp .ci_update_hand
 
 .ci_select:
+        lda zp_hand_count
+        beq .ci_done
         ; Toggle selection of current card
         ldx zp_cursor_pos
         lda #1
@@ -302,12 +280,12 @@ check_input:
         jsr count_selected_cards
         beq .ci_done
 
-        ; Check if playing 8 - need to nominate suit
-        jsr check_for_eight
+        ; Check if playing an Ace - need to nominate suit
+        jsr check_for_ace
         cmp #0
         beq .ci_send_play
 
-        ; 8 selected - get suit nomination
+        ; Ace selected - get suit nomination
         jsr get_suit_nomination
         jmp .ci_send_play_suit
 
@@ -338,10 +316,10 @@ check_input:
         rts
 
 ; -----------------------------------------------------------------------------
-; Check if any selected card is an 8 (Ace in our encoding = 14)
+; Check if any selected card is an Ace (rank 14)
 ; Returns: A = 0 if no ace, 1 if ace selected
 ; -----------------------------------------------------------------------------
-check_for_eight:
+check_for_ace:
         ldx #0
 
 .cfe_loop:
@@ -405,7 +383,7 @@ get_suit_nomination:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
 
         lda #<txt_nominate_suit
         sta zp_ptr1
@@ -465,6 +443,7 @@ get_suit_nomination:
 .gsn_done:
         ; Restore status line
         jsr draw_status
+        lda zp_temp2            ; also return the suit to the solo caller
         rts
 
 txt_nominate_suit:
@@ -475,48 +454,53 @@ txt_nominate_suit:
 ; Show winner screen
 ; -----------------------------------------------------------------------------
 show_winner:
-        ldx #10
-        ldy #12
-        clc
-        jsr PLOT
+        jsr draw_result
+        jsr input_wait_key
+        jmp start
 
-        ; Check if we won
+; PLAYER_WON's legacy WinnerIndex is the surviving player, who LOST.
+; Keep rendering separate from the wait so the screen can be verified.
+draw_result:
+        jsr redraw_game
+        ldy #12
+        jsr screen_clear_row
+        ldx #2
+        ldy #12
+        jsr screen_goto
         lda WINNER_INDEX
         cmp zp_my_index
-        beq .sw_we_won
-
-        ; Someone else won
-        lda #<txt_you_lose
+        beq .result_last
+        lda #<txt_you_out
         sta zp_ptr1
-        lda #>txt_you_lose
+        lda #>txt_you_out
         sta zp_ptr1+1
-        jsr screen_print
-
-        ; Print winner number
-        lda WINNER_INDEX
-        clc
-        adc #'1'
-        jsr CHROUT
-        jmp .sw_wait
-
-.sw_we_won:
-        lda #<txt_you_win
+        jmp .result_print
+.result_last:
+        lda #<txt_you_last
         sta zp_ptr1
-        lda #>txt_you_win
+        lda #>txt_you_last
         sta zp_ptr1+1
+.result_print:
         jsr screen_print
+        ldy #24
+        jsr screen_clear_row
+        ldx #1
+        ldy #24
+        jsr screen_goto
+        lda #<txt_result_key
+        sta zp_ptr1
+        lda #>txt_result_key
+        sta zp_ptr1+1
+        jmp screen_print
 
-.sw_wait:
-        ; Wait for keypress then restart
-        jsr input_wait_key
-        jmp start               ; Restart game
-
-txt_you_win:
-        !text "*** YOU WIN! ***"
+txt_you_out:
+        !text "GAME OVER - YOU WENT OUT"
         !byte 0
-
-txt_you_lose:
-        !text "GAME OVER - PLAYER "
+txt_you_last:
+        !text "GAME OVER - YOU FINISHED LAST"
+        !byte 0
+txt_result_key:
+        !text "PRESS A KEY FOR THE MENU"
         !byte 0
 
 ; -----------------------------------------------------------------------------
@@ -526,7 +510,7 @@ show_error_msg:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
 
         lda #<txt_server_error
         sta zp_ptr1

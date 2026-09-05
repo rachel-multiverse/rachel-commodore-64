@@ -135,9 +135,20 @@ serial_rx_ready:
 
 ; -----------------------------------------------------------------------------
 ; Take the next byte from the ring.
-; Out: A = byte, C set. C clear when the ring is empty. Clobbers: A, X.
+; Out: A = byte, C set. C clear when the ring is empty. Preserves X and Y.
 ; -----------------------------------------------------------------------------
 serial_rx_get:
+        ; Frame assembly and modem timeouts keep their index in X.
+        txa
+        pha
+        jsr serial_rx_get_raw
+        sta rx_read_byte
+        pla
+        tax
+        lda rx_read_byte
+        rts
+rx_read_byte: !byte 0
+serial_rx_get_raw:
         ldx rx_ring_tail
         cpx rx_ring_head
         beq .rg_empty

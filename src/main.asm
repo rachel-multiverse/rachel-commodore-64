@@ -43,6 +43,10 @@ basic_stub:
         * = $0810
 
 start:
+        ; Every menu restart abandons nested game/input calls. Reset the stack
+        ; so repeated games or disconnects cannot consume it.
+        ldx #$ff
+        txs
         ; Disable interrupts during setup
         sei
 
@@ -63,7 +67,7 @@ start:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_waiting
         sta zp_ptr1
         lda #>txt_waiting
@@ -100,6 +104,8 @@ start:
         cmp #0
         beq start               ; Empty input, restart
 
+        jsr reconnect_new_session
+
         ; Attempt connection
         jsr do_connect
         cmp #0
@@ -133,6 +139,7 @@ start:
         !source "src/game.asm"
         !source "src/connect.asm"
         !source "src/loop.asm"
+        !source "src/reconnect.asm"
         !source "src/solo.asm"
 !if E2E_AUTOPLAY {
         !source "src/autoplay.asm"
@@ -187,10 +194,12 @@ init_buffers:
 ; Out: A = 'S' for standalone, anything else for online.
 ; -----------------------------------------------------------------------------
 main_choose_mode:
+        ldy #24
+        jsr screen_clear_row
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_mode
         sta zp_ptr1
         lda #>txt_mode

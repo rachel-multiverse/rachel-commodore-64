@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Overview
 
-Rachel C64 is a Commodore 64 client for the Rachel card game, written in ACME-compatible 6502 assembly and built with Asm198x. It connects to an iOS/macOS host via WiFi bridge (Zimodem) using the RUBP binary protocol.
+Rachel C64 is a Commodore 64 client for the Rachel card game, written in ACME-compatible 6502 assembly and built with Asm198x. It supports standalone play through a local rules kernel and online play against a compatible Rachel server through Ultimate networking or a user-port WiFi modem.
 
 ## Build Commands
 
@@ -17,10 +17,10 @@ make clean      # Clean build artifacts
 
 ## Architecture
 
-This is a **render-only client** - all game logic runs on the iOS host. The C64:
-- Receives GAME_STATE messages and renders the display
-- Sends PLAY_CARD/DRAW_CARD messages based on user input
-- Does NOT validate moves locally
+Standalone mode runs the rules and computer opponents locally in `src/solo.asm`.
+Online mode remains a render-only client: the server owns legality and game
+state; the local kernel does not participate. See `docs/STATUS.md` for verified
+behaviour and outstanding hardware checks.
 
 ## Hardware Constraints
 
@@ -79,7 +79,7 @@ The `make test-net` command bridges VICE's RS232 emulation to TCP:
 x64sc -rsuser -rsuserbaud 2400 -rsuserdev 2 -rsdev2 "|nc localhost 19840" build/rachel.prg
 ```
 
-This connects directly to an iOS host's TCP listener on port 19840.
+This legacy target connects to a compatible local server on port 19840. The normal server and `make e2e-full-game` use port 6502.
 
 ## Related Documentation
 

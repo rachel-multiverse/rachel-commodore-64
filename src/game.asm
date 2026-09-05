@@ -53,7 +53,7 @@ print_card:
         ; Set color based on suit (red for hearts/diamonds)
         cpx #2                  ; Clubs(2) or Spades(3)?
         bcs .black_suit
-        lda #COL_RED            ; Hearts/Diamonds = red
+        lda #COL_LIGHT_RED      ; readable against the blue table
         bne .set_color
 .black_suit:
         lda #COL_WHITE          ; Clubs/Spades = white
@@ -90,109 +90,97 @@ suit_chars:
 ; Shows cards with selection brackets
 ; -----------------------------------------------------------------------------
 draw_hand:
-        ; Clear hand area first (rows 14-17)
-        ldx #1
+        ; Four rows of eight five-character slots cover every supported hand.
+        ; Erase old cards as well as redrawing current ones after a hand shrinks.
         ldy #14
-        clc
-        jsr PLOT
-
-        ; Print each card
-        ldx #0                  ; Card index
-.card_loop:
+.dh_clear:
+        tya
+        pha
+        jsr screen_clear_row
+        pla
+        tay
+        iny
+        cpy #18
+        bne .dh_clear
+        ldx #0
+.dh_card:
         cpx zp_hand_count
-        beq .hand_done
-
-        stx zp_temp4            ; Save card index
-
-        ; Check if at cursor position (highlight)
+        bcs .dh_done
+        stx zp_temp4
+        txa
+        and #7
+        sta zp_temp3
+        asl
+        asl
+        clc
+        adc zp_temp3            ; column = (index % 8) * 5
+        pha
+        txa
+        lsr
+        lsr
+        lsr
+        clc
+        adc #14
+        tay
+        pla
+        tax
+        jsr screen_goto
+        ldx zp_temp4
         cpx zp_cursor_pos
-        bne .not_cursor
-        lda #COL_YELLOW         ; Highlight cursor position
-        sta $0286
-.not_cursor:
-
-        ; Check if selected
-        lda SELECTED_CARDS,x
-        beq .dh_not_sel
-
-        ; Selected - print opening bracket
-        lda #'>'
+        bne .dh_plain
+        lda #$12                ; reverse video marks the entire current card
         jsr CHROUT
-        bne .dh_print_card
-
-.dh_not_sel:
+.dh_plain:
         lda #' '
+        ldx zp_temp4
+        cpx zp_cursor_pos
+        bne .dh_marker
+        lda #'>'
+.dh_marker:
+        ldy SELECTED_CARDS,x
+        beq .dh_unselected
+        lda #'*'
+.dh_unselected:
         jsr CHROUT
-
-.dh_print_card:
         ldx zp_temp4
         lda MY_HAND,x
         jsr print_card
-
-        ; Closing bracket if selected
-        ldx zp_temp4
-        lda SELECTED_CARDS,x
-        beq .dh_no_close
-        lda #'<'
+        lda #$92
         jsr CHROUT
-        bne .dh_next_card
-.dh_no_close:
-        lda #' '
-        jsr CHROUT
-
-.dh_next_card:
-        ; Reset color
-        lda #COL_WHITE
-        sta $0286
-
-        ; Next card
         ldx zp_temp4
         inx
-
-        ; Check for row wrap (6 cards per row)
-        txa
-        cmp #6
-        bne .no_row_wrap
-        pha
-        ldx #1
-        ldy #16                 ; Second row
-        clc
-        jsr PLOT
-        pla
-        tax
-.no_row_wrap:
-
-        bne .card_loop
-
-.hand_done:
+        jmp .dh_card
+.dh_done:
         rts
 
 ; -----------------------------------------------------------------------------
 ; Draw discard pile (centered, rows 6-9)
 ; -----------------------------------------------------------------------------
 draw_discard:
+        ldy #7
+        jsr screen_clear_row
         ; Draw card box
         ldx #17
         ldy #6
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Top of box
-        lda #$70                ; PETSCII top-left corner
+        lda #'+'                ; simple, legible card outline
         jsr CHROUT
-        lda #$40                ; Horizontal line
-        jsr CHROUT
-        jsr CHROUT
+        lda #$60                ; Horizontal line
         jsr CHROUT
         jsr CHROUT
-        lda #$6e                ; Top-right corner
+        jsr CHROUT
+        jsr CHROUT
+        lda #'+'                ; Top-right corner
         jsr CHROUT
 
         ; Middle row with card
         ldx #17
         ldy #7
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #$5d                ; Vertical bar
         jsr CHROUT
         lda #' '
@@ -209,15 +197,15 @@ draw_discard:
         ldx #17
         ldy #8
         clc
-        jsr PLOT
-        lda #$6d                ; Bottom-left
+        jsr screen_goto
+        lda #'+'                ; Bottom-left
         jsr CHROUT
-        lda #$40
-        jsr CHROUT
-        jsr CHROUT
+        lda #$60
         jsr CHROUT
         jsr CHROUT
-        lda #$7d                ; Bottom-right
+        jsr CHROUT
+        jsr CHROUT
+        lda #'+'                ; Bottom-right
         jsr CHROUT
 
         ; Show nominated suit if active
@@ -228,7 +216,7 @@ draw_discard:
         ldx #25
         ldy #7
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ldx NOMINATED_SUIT
         lda suit_names,x
@@ -259,6 +247,10 @@ txt_spades:   !text "SPADES"
 ; Draw player list (rows 2-3)
 ; -----------------------------------------------------------------------------
 draw_players:
+        ldy #2
+        jsr screen_clear_row
+        ldy #3
+        jsr screen_clear_row
         ldx #0                  ; Player index
 
 .player_loop:
@@ -295,7 +287,7 @@ draw_players:
 
         ldx zp_temp1
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Check if current turn - show marker
         ldx zp_temp4
@@ -372,10 +364,12 @@ print_digit:
 ; Draw game info line (row 10)
 ; -----------------------------------------------------------------------------
 draw_game_info:
+        ldy #10
+        jsr screen_clear_row
         ldx #5
         ldy #10
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Deck count
         lda #<txt_deck
@@ -424,7 +418,7 @@ draw_status:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Clear line first
         lda #' '
@@ -438,7 +432,7 @@ draw_status:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Check whose turn
         lda zp_current_turn

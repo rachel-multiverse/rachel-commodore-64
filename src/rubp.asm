@@ -326,8 +326,13 @@ rubp_send_hello:
         lda #SPEC_VERSION_LO
         sta SERIAL_TX_BUF+PAYLOAD_START+19
 
-        ; ReconnectToken (payload+20) and RoomCode (payload+28) stay zero: this
-        ; client does not reclaim slots (decision 0002) and joins the open game.
+        ; Keep the same token across redials. RoomCode remains empty.
+        ldx #7
+.hello_token:
+        lda RECONNECT_TOKEN,x
+        sta SERIAL_TX_BUF+PAYLOAD_START+20,x
+        dex
+        bpl .hello_token
 
         ; Capabilities at payload+36. Bit 0 asks the host to hold TURN_START
         ; until we acknowledge the GAME_STATE + HAND_SYNC pair. A bit-banged

@@ -58,6 +58,14 @@ done:
 ; (platform is hardcoded 0x0002 by the client; the fixture used iOS 0x0031)
 ; -----------------------------------------------------------------------------
 test_hello:
+        ldx #7
+.token:
+        txa
+        clc
+        adc #1
+        sta RECONNECT_TOKEN,x
+        dex
+        bpl .token
         lda #$21                ; sequence 0x0021 (lo, hi)
         sta zp_sequence
         lda #$00

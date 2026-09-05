@@ -14,7 +14,7 @@ all: $(OUT)
 
 # Build the PRG file. build_flags.asm is generated rather than committed so a
 # stale switch cannot survive a checkout and silently ship the test policy.
-$(OUT): src/*.asm
+$(OUT): $(wildcard src/*.asm src/solo/*.asm)
 	@mkdir -p build
 	@printf 'E2E_AUTOPLAY = 0\nSOLO_SELFTEST = 0\n' > $(FLAGS)
 	$(ASM198X) --dialect acme --prg -I . --listing=build/report.txt $(SRC) -o $(OUT)
@@ -84,3 +84,28 @@ test: $(OUT)
 
 .PHONY: all test run test-net conformance reference-parity clean report \
 	e2e-prg e2e-full-game solo-selftest link-loss
+
+# ROM-backed display and production input checks (requires local C64 ROMs).
+ui-test:
+	python3 tests/ui_regression.py
+
+.PHONY: ui-test
+
+production-ui-test: $(OUT)
+	python3 tests/production_ui.py
+
+.PHONY: production-ui-test
+
+reconnect-test:
+	python3 tests/reconnect_regression.py
+
+reconnect-e2e:
+	python3 tests/reconnect_e2e.py
+
+.PHONY: reconnect-test reconnect-e2e
+
+# Serial clients need spacing between server frames at 2400 baud.
+reconnect-userport-e2e:
+	RACHEL_E2E_TRANSPORT=userport RACHEL_E2E_WRITE_INTERVAL=300ms RACHEL_E2E_GAME_FRAMES=7000 RACHEL_E2E_OUTPUT=reconnect-userport-output python3 tests/reconnect_e2e.py
+
+.PHONY: reconnect-userport-e2e

@@ -24,7 +24,7 @@ input_ip_address:
         ldx #1
         ldy #22
         clc
-        jsr PLOT
+        jsr screen_goto
 
         ; Show prompt
         lda #<txt_ip_prompt
@@ -217,6 +217,8 @@ player_name:
 ; -----------------------------------------------------------------------------
 wait_for_game:
 .wfg_loop:
+        lda transport_link_down
+        bne .wfg_cancel
         ; Check for keypress (ESC to cancel)
         jsr GETIN
         cmp #$03                ; RUN/STOP key
@@ -283,7 +285,7 @@ show_status_connecting:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_status_connecting
         sta zp_ptr1
         lda #>txt_status_connecting
@@ -294,7 +296,7 @@ show_status_handshake:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_status_handshake
         sta zp_ptr1
         lda #>txt_status_handshake
@@ -305,7 +307,7 @@ show_status_waiting_game:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_status_waiting_game
         sta zp_ptr1
         lda #>txt_status_waiting_game
@@ -316,7 +318,7 @@ show_status_failed:
         ldx #1
         ldy #24
         clc
-        jsr PLOT
+        jsr screen_goto
         lda #<txt_status_failed
         sta zp_ptr1
         lda #>txt_status_failed

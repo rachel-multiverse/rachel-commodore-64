@@ -70,6 +70,17 @@ solo_run:
         jsr solo_seed_from_machine
         jsr solo_ask_players
         jsr sk_new_game
+        jsr screen_init
+        jsr draw_game_screen
+        ldy #20
+        jsr screen_clear_row
+        ldx #1
+        ldy #20
+        lda #<txt_solo_controls
+        sta zp_ptr1
+        lda #>txt_solo_controls
+        sta zp_ptr1+1
+        jsr screen_print_at
 
 .srun_turn:
         jsr solo_publish
@@ -176,3 +187,7 @@ solo_human_turn:
         ldx #SK_NO_SUIT
         ldy zp_cursor_pos
         jmp sk_play_index
+
+txt_solo_controls:
+        !text "<-> MOVE  P PLAY  DRAW IS AUTOMATIC"
+        !byte 0

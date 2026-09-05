@@ -17,3 +17,11 @@ build/*.asm
 build/*.sym
 build/*.json
 build/e2e-output/
+
+build/ui-regression/
+build/production-ui/
+
+build/reconnect-output/
+build/reconnect-userport-output/
+build/reconnect-regression/
+tests/__pycache__/

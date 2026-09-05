@@ -1,0 +1,118 @@
+# C64 verification status
+
+Checked locally on 5 September 2026 against `bf633af` and the subsequent
+working-tree display/input fixes.
+This is a playable development build, not a claim of physical-hardware verification.
+
+## Checks run
+
+- `make test`: production PRG assembled (7,623 bytes reported by Asm198x);
+  Ultimate UCI and user-port transport contract checks passed.
+- `make solo-selftest`: 16 complete automated games under Emu198x, covering
+  two to eight seats. All ended within the test bound, with all 52 cards
+  accounted for after each game.
+- `EMU198X_C64=/path/to/release/emu198x-c64 make conformance`: encoder and
+  decoder checks passed, including CRC and state acknowledgement. Documented
+  differences from the golden fixtures include the C64 platform ID, v2
+  transport fields, capability flags. The HELLO reconnect token matches the golden fixture.
+
+These automated checks exercise game logic and networking. They do not replace
+playing through the production keyboard UI or checking physical hardware.
+
+## Network game result
+
+`make e2e-full-game` passed: a complete deterministic two-player game over
+the emulated Ultimate transport against the local Go server. The harness
+reported no rejected client actions and produced a final screenshot. Evidence
+is retained in `build/e2e-output/` (server log, emulator report and screenshot).
+This run used the PAL model and a test autoplay build. The final fixed build
+also passed with `RACHEL_E2E_GAME_FRAMES=5000 make e2e-full-game`.
+
+## Display and input fixes verified
+
+- Converted column/row coordinates to KERNAL PLOT's row/column convention.
+- Kept output out of column 39 to avoid KERNAL logical-line wrapping; all eight
+  player labels remain visible. Fixed the horizontal-line glyph.
+- Cleared old hand, nomination and attack text, and fitted all 32 supported
+  hand slots in four rows. Cursor uses reverse video; selections use `*`.
+- Preserved the key returned by GETIN when checking the online player's turn.
+  Empty hands cannot underflow the cursor or select a phantom card.
+- Returned the chosen Ace suit to both online and solo callers.
+- Corrected the result: protocol WinnerIndex names the survivor, who finishes
+  last. Both modes now say either YOU FINISHED LAST or YOU WENT OUT.
+- Rebuilt the table after the solo seat prompt and online lobby, and displayed
+  the controls that actually apply to solo mode.
+- Reset the stack at menu restart rather than accumulating abandoned calls.
+- Returned from a disconnected lobby instead of polling forever.
+
+`make ui-test` passes through real ROM-backed screen and GETIN routines. It
+checks eight player labels, 32-card rendering, shrinking hands, attack clearing,
+online cursor/selection/play/draw, turn gating, empty hands, Ace suit return,
+both results, and lobby disconnect return. Transport output is stubbed in this
+test; the end-to-end game tests actual transport separately.
+
+`make production-ui-test` passes using the unchanged production PRG: keyboard
+input selects solo, chooses eight seats and moves the hand cursor. Screen RAM
+checks and visual inspection confirm the table and controls. This is a smoke
+test, not a full manual playthrough.
+
+`make link-loss`, the 16-game solo soak and protocol conformance pass.
+`make reference-parity` confirms the Asm198x and ACME production binaries match.
+
+Screenshots of the fixed build:
+
+![Eight-seat solo game](screenshots/solo-eight-seats.png)
+![Completed network game](screenshots/network-result.png)
+
+## Available modes and limits
+
+- Standalone: local rules and computer opponents, two to eight seats, no modem
+  or server required.
+- Online: Ultimate Command Interface preferred; user-port WiFi modem fallback
+  implemented. The online server owns game state and legality.
+- Active-game reconnect retains the session token in RAM, retries three times
+  and offers Retry/Menu on failure. Resetting or returning to the menu discards
+  that session. A restarted server cannot recover its old in-memory game.
+- No physical C64/Ultimate/modem verification record was found in this checkout.
+- The user-port fallback has been exercised in emulation; see the reconnect
+  verification below for its pacing requirement and limits.
+- There is currently no public Rachel game server. Local harnesses start and
+  stop their own server; these tests do not create a hosted service.
+
+Do not describe the App Store iOS build as a vintage multiplayer host without
+separate evidence for that exact released build and connection path.
+
+## Reconnect verification
+
+The user explicitly requested seat reclaim on 5 September 2026, superseding
+the old no-reconnect decision for C64 now that the Go server supports it.
+
+The client sends the same nonzero token and assigned game ID on redial, verifies
+the returned game and seat, and pauses play until GAME_STATE and HAND_SYNC
+arrive in order after WELCOME. It clears pending card selections and does not
+replay a move. Closed sockets and about ten seconds of silence trigger recovery;
+valid messages refresh the deadline. The token is a best-effort timing-derived
+identifier, not a cryptographically random credential, and is never logged.
+
+`make reconnect-test` passes six hydration cases: full recovery (including an
+out-of-order hand that must be ignored), wrong seat, wrong game, explicit
+rejection, incomplete state/hand pair and silence. It also checks three automatic
+attempts, R for another three attempts, and Q returning to the real menu.
+
+`make reconnect-e2e` passes over emulated Ultimate: a TCP proxy cuts two active
+connections and verifies the unchanged token, game, seat and exact private hand
+on each reclaim. The same game then finishes without rejected client actions.
+Evidence is in `build/reconnect-output/`.
+
+The modem work also fixed inverted transport readiness and a receive-ring
+reader that corrupted the caller's frame index. Both have ROM-backed regression
+checks. On redial, a command terminator clears an unfinished escape sequence
+when NO CARRIER already returned the modem to command mode.
+
+Physical hardware verification remains outstanding for both transports.
+
+`make reconnect-userport-e2e` also passes: two forced drops, matching session
+and private hand after each reclaim, followed by game completion. This uses
+PAL Emu198x at 2400 baud and the Go server's `--vic20-write-interval 300ms`.
+An unpaced run reclaimed both drops but stalled later in the game; use the
+paced configuration. Evidence is in `build/reconnect-userport-output/`.

@@ -101,7 +101,7 @@ def main() -> None:
         {"action": "run_frames", "frames": 120},
         {"action": "press_key", "key": "Space", "hold_frames": 3},
         {"action": "run_frames", "frames": 60},
-        {"action": "type_string", "text": f"127.0.0.1:{PORT}\n", "hold_frames": 2,
+        {"action": "type_string", "text": f"127.0.0.1:{os.environ.get('RACHEL_E2E_CLIENT_PORT', PORT)}\n", "hold_frames": 2,
          "settle_frames": 40},
         {"action": "run_frames", "frames": GAME_FRAMES},
     ], indent=2) + "\n")

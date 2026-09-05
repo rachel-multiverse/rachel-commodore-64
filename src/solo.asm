@@ -78,15 +78,7 @@ solo_ask_players:
 ; The game is over: the seat still holding cards finishes last.
 ; -----------------------------------------------------------------------------
 solo_show_result:
-        ldx #2
-        ldy #22
-        lda #<txt_solo_over
-        sta zp_ptr1
-        lda #>txt_solo_over
-        sta zp_ptr1+1
-        jsr screen_print_at
-
-        ; Whoever is left in is the loser, and seat 0 is the player.
+        ; Find the survivor for the shared result renderer.
         ldx #0
 .sres_find:
         txa
@@ -97,24 +89,9 @@ solo_show_result:
         bcc .sres_find
         ldx #0
 .sres_found:
-        cpx #0
-        beq .sres_lost
-        lda #<txt_solo_won
-        sta zp_ptr1
-        lda #>txt_solo_won
-        sta zp_ptr1+1
-        jmp .sres_print
-.sres_lost:
-        lda #<txt_solo_lost
-        sta zp_ptr1
-        lda #>txt_solo_lost
-        sta zp_ptr1+1
-.sres_print:
-        jsr screen_print
-.sres_key:
-        jsr GETIN
-        beq .sres_key
-        rts
+        stx WINNER_INDEX
+        jsr draw_result
+        jmp input_wait_key
 
 txt_solo_players:
         !text "PLAYERS AT THE TABLE (2-8)? "

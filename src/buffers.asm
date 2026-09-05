@@ -63,3 +63,5 @@ RUBP_MSG_SIZE   = 64            ; RUBP protocol message size
 MAX_HAND_SIZE   = 32            ; Maximum cards in hand
 MAX_PLAYERS     = 8             ; Maximum players per game
 NAME_LENGTH     = 16            ; Player name length
+
+RECONNECT_TOKEN = $c310         ; 8 opaque bytes; cleared only for a new session
