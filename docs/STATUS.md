@@ -1,5 +1,32 @@
 # C64 verification status
 
+## Android and C64 mixed table, 7 October 2026
+
+C64 and native Android now complete a 32-turn game at the same Go table with
+no bot seats. Each client makes 16 accepted moves, reclaims its original seat
+after one forced drop, receives a matching state/hand pair, and continues.
+C64's recovered snapshot acknowledgement is checked as well as its v2 CRCs.
+The final Android result, C64 RAM and C64 screen agree with the host: Android
+went out and C64 finished last holding two cards.
+
+This scenario exposed Go answering resync requests only on the active seat.
+A waiting C64 therefore repeatedly reconnected while Android took its turn.
+Go now reads every human seat continuously and handles all requests in its
+existing authoritative loop. Waiting seats receive their own state/hand;
+acknowledging that pair cannot grant them a turn. No C64 assembly changed.
+
+[Shared runner and retained evidence](https://github.com/rachel-multiverse/rachel-ios/tree/saturday-felt/docs/verification/2026-10-07/android-c64-crossplay)
+record exact commits, artifact hashes, CRC/state audits, host regression and
+both native/emulated screenshots. The runner lives in the sibling iOS checkout:
+`python3 scripts/test-native-crossplay.py --peer c64 --android-serial emulator-5580 --output /tmp/rachel-android-c64-proof`.
+Use a dedicated emulator; it clears Rachel's Android app data.
+
+This remains PAL Ultimate emulator autoplay paired with Android's real Compose
+controls. Production C64 keyboard play, physical hardware, current-host paced
+user-port reconnect and public TLS remain separate checks. The existing
+emulator binary comes from a modified checkout; its recorded SHA256 identifies
+the tested executable.
+
 ## Current Go host checked, 7 October 2026
 
 C64 assembly `6f2e3d3` completes a PAL emulator game over Ultimate against Go
