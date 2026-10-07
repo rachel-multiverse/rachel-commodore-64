@@ -73,6 +73,13 @@ generated into `build/vectors.inc` from the JSON each run, so there's no
 hand-transcribed byte to drift. (`GAME_START`/`CARD_DRAWN` have no golden vector
 in the fixture set, so they aren't covered here.)
 
+Acknowledgements require a matching public/private pair. The deliberately
+different GAME_STATE and HAND_SYNC fixtures must produce a plain resync request,
+not an ACK. An additional 22 assembly checks cover a matching pair, duplicate
+ACK, watchdog/public-only update, missing hashes, hand before state and each
+individual turn/spec/hash byte mismatch. This checks actual encoded flags; the
+old test incorrectly certified two different snapshots as one pair.
+
 ## How it works
 
 Each harness is a BASIC-stub PRG. `run.py` `--load`s it, types `RUN` (the C64

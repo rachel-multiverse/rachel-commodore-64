@@ -11,13 +11,25 @@ def frame(kind,payload=b'',gid=1):
   for _ in range(8):crc=((crc<<1)^0x1021 if crc&0x8000 else crc<<1)&0xffff
  b[14:16]=crc.to_bytes(2,'big');return b
 welcome=frame(2,bytes([0,0,0,1,2,1,0,1,1]))
-state=bytearray(48);state[0]=0;state[3]=14;state[4]=255;state[16]=255;state[22]=1
+state=bytearray(48);state[0]=0;state[3]=14;state[4]=255;state[16]=255;state[20]=1;state[22]=1;state[23]=1
+state[24:32]=bytes(range(1,9))
 public=frame(7,state)
-hand=frame(15,bytes([2,2,14]))
+private=bytearray(48);private[:3]=bytes([2,2,14]);private[36]=1;private[38]=1;private[39]=1;private[40:48]=state[24:32]
+hand=frame(15,private)
 wrong=bytearray([0,1,0,1,2,1,0,1,1])
 cases=[('complete',[welcome,hand,public,hand],0),('wrong_seat',[frame(2,wrong)],1),('wrong_game',[frame(2,gid=2)],1),('rejected',[frame(0xff)],1),('missing_hand',[welcome,public],1),('silent',[],1)]
 # Actual ERROR type is 0x0b (see src/rubp.asm); no hand may complete this case.
 cases[3]=('rejected',[frame(0x0b)],1)
+for label,offset in [('turn',36),('spec',38),('hash',47),('hash_flag',39)]:
+ bad=private.copy();bad[offset]^=1
+ cases.append(('mismatched_'+label,[welcome,public,frame(15,bad)],1))
+ if label=='hash':cases.append(('mismatch_then_match',[welcome,public,frame(15,bad),public,hand],0))
+no_hash=state.copy();no_hash[23]=0
+cases.append(('missing_state_hash',[welcome,frame(7,no_hash),hand],1))
+legacy=bytearray([0,0,0,1,2,1,0,1,0])
+cases.append(('legacy_without_hashes',[frame(2,legacy),frame(7,no_hash),frame(15,bytes([2,2,14]))],0))
+assert len(cases)*2<31
+
 source='''!source "src/main.asm"
 * = $9000
 fixture_start:
@@ -118,7 +130,7 @@ r=subprocess.run([str(emu),'--headless','--rom-dir',str(Path.home()/'.emu198x/ro
 assert r.returncode==0,r.stderr
 reads=[o['bytes'] for o in json.loads(r.stdout)['observations'] if o['kind']=='memory_read']
 values=reads[0]
-assert reads[1:3]==[[9],[12]], ('retry count',reads[1:3])
+assert reads[1:3]==[[len(cases)+3],[len(cases)+6]], ('retry count',reads[1:3])
 assert reads[3]==[0]*8, 'menu did not discard old session token'
 menu=''.join(chr(c+64 if c<32 else c) for c in reads[4])
 assert 'S = SOLO GAME' in menu, menu
@@ -126,4 +138,4 @@ assert values[31]==0xaa,values
 for i,(name,_,expected) in enumerate(cases):
  assert values[i*2]==expected,(name,values)
  assert values[i*2+1]==(2 if expected==0 else 1),(name,'private hand changed on failure',values)
-print('Reconnect hydration regression passed: complete pair, ordering, identity, rejection, partial sync and timeout')
+print('Reconnect hydration regression passed: matching metadata, legacy pairs, ordering, identity, rejection, partial sync and timeout')

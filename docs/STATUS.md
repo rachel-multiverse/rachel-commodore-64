@@ -1,5 +1,25 @@
 # C64 verification status
 
+## State/hand acknowledgement correction, 7 October 2026
+
+A three-seat iOS/Android/C64 attempt exposed a false ACK while C64 waited for
+the other two seats. A public GAME_STATE had arrived without a private HAND_SYNC
+for that turn, but the watchdog acknowledged it as a complete pair. Plain
+liveness requests now remain requests; ACKs require matching turn, spec version
+and state hash from a received HAND_SYNC. Reconnect also waits for that match
+before replacing the hand and resuming input. Legacy unnegotiated pairs retain
+their existing path.
+
+The corrected conformance expectation failed before the fix with
+`mismatched pair must request, not ACK got=0x03 want=0x01`. Three encoder checks,
+46 decoder/request checks, 22 pair checks and 13 reconnect hydration cases pass.
+Production build, transport/pin checks and ACME byte parity pass. The unchanged
+strict mixed-game audit will be rerun separately; these tests alone do not
+claim a completed three-client game or physical hardware support.
+
+[Fix evidence](verification/2026-10-07-matching-pairs/) includes the red/green
+checks and exact production source/artifact hashes.
+
 ## Android and C64 mixed table, 7 October 2026
 
 C64 and native Android now complete a 32-turn game at the same Go table with

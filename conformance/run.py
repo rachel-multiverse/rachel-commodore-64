@@ -97,6 +97,7 @@ FAIL_STATUSES = {"BUG", "UNEXPECTED"}
 # ---- Decoder harness (decoders.asm) -----------------------------------------
 DEC_PRG = os.path.join(BUILD, "decoders.prg")
 DEC_SLOTS = {"welcome": (0xC000, 6), "game_state": (0xC010, 25), "sync_ack": (0xC030, 15)}
+DEC_SLOTS["pair_checks"] = (0xC040, 22)
 DEC_DONE = 0xC0FF
 CONN_WAITING = 3  # rubp_parse_welcome sets this
 
@@ -257,15 +258,12 @@ def check_decoders(fixtures):
         gs_checks.append((f"stateHash[{i}]", gc[16 + i], gp[24 + i]))
     gs_checks.append(("hashValid", gc[24], 1 if (gp[23] & 0x01) else 0))
 
-    # The acknowledgement must describe the GAME_STATE the client actually
-    # parsed, not the HAND_SYNC that completed the pair. Both carry a state
-    # hash and the fixtures carry different ones, so echoing the wrong message
-    # is directly visible here. See CLIENT_GUIDE.md, "Acknowledge what you
-    # received, not what you were told".
+    # These fixtures disagree, so the client must request a coherent pair.
+    # It still reports only the public state it actually parsed.
     h = golden(fixtures, "hand_sync")
     hp = h[16:]   # HAND_SYNC payload: TurnNumber @33, SpecVersion @37, hash @40
     sc = got["sync_ack"]
-    sync_checks = [("flags=hash|ack", sc[0], 0x03)]
+    sync_checks = [("mismatched pair must request, not ACK", sc[0], 0x01)]
     for i in range(4):
         sync_checks.append((f"turnNumber[{i}]", sc[1 + i], gp[17 + i]))
     for i in range(2):
@@ -279,6 +277,14 @@ def check_decoders(fixtures):
         0 if bytes(sc[7:15]) == bytes(hp[40:48]) else 1,
         1,
     ))
+
+    pair_cases = [
+        ("watchdog after public state", 1), ("ACK without hand", 1),
+        ("matching state and hand", 3), ("duplicate ACK", 1),
+        ("public-only next turn", 1), ("hand without hash", 1),
+        ("state without hash", 0), ("hand before state", 0),
+    ] + [(f"mismatched hand byte {offset}", 1) for offset in [33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 47]]
+    pair_checks = [(name, got["pair_checks"][i], expected) for i, (name, expected) in enumerate(pair_cases)]
     sync_checks.append((
         "turn is not HAND_SYNC's",
         0 if bytes(sc[1:5]) == bytes(hp[33:37]) else 1,
@@ -288,7 +294,7 @@ def check_decoders(fixtures):
     print("DECODERS — value the parser extracted vs golden vector at spec offsets\n")
     failed = False
     for name, checks in [("welcome", welcome_checks), ("game_state", gs_checks),
-                         ("sync_ack", sync_checks)]:
+                         ("sync_ack", sync_checks), ("pair_checks", pair_checks)]:
         bad = [(label, got_v, want_v) for label, got_v, want_v in checks if got_v != want_v]
         failed = failed or bool(bad)
         print(f"== {name:<10} {'PASS' if not bad else 'FAIL'} ==")

@@ -610,8 +610,8 @@ rubp_send_draw_card:
 
 ; -----------------------------------------------------------------------------
 ; -----------------------------------------------------------------------------
-; Send SYNC_REQUEST, acknowledging the GAME_STATE + HAND_SYNC pair when we
-; genuinely hold one.
+; Send SYNC_REQUEST. Liveness and error recovery always ask for a fresh pair;
+; they cannot acknowledge a public GAME_STATE without its private HAND_SYNC.
 ;
 ; A host that accepted CAP_SYNC_ACK will not send TURN_START until an
 ; acknowledgement arrives whose hash matches the pair it sent. That only works
@@ -625,7 +625,8 @@ rubp_send_draw_card:
 ; host releases TURN_START, and you act a turn behind on whichever fields only
 ; GAME_STATE carries (the top discard above all). Here GAME_STATE is the sole
 ; writer of OBSERVED_HASH / OBSERVED_TURN / OBSERVED_SPEC, and GAME_STATE_FRESH
-; says one arrived and has not been acknowledged yet.
+; says one arrived and has not been acknowledged yet. An ACK additionally
+; requires a HAND_SYNC with matching turn, spec version and state hash.
 ;
 ; Without that flag we send a plain resync request instead: the host answers by
 ; resending the pair, which costs one round trip rather than a wrong turn. Frame
@@ -636,6 +637,65 @@ rubp_send_draw_card:
 ; Clobbers: A, X, Y
 ; -----------------------------------------------------------------------------
 rubp_send_sync_request:
+        jsr rubp_build_sync_request
+        jmp rubp_send
+
+; Called only after parsing HAND_SYNC. A missing/mismatched half requests a new
+; pair without consuming the fresh public state or claiming it is complete.
+rubp_send_sync_ack:
+        jsr rubp_hand_matches_state
+        beq .sa_matched
+        jmp rubp_send_sync_request
+.sa_matched:
+        jsr rubp_build_sync_request
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        ora #SYNC_F_ACK
+        sta SERIAL_TX_BUF+PAYLOAD_START+6
+        lda #0
+        sta GAME_STATE_FRESH
+        jmp rubp_send
+
+; A=0 only for an unacknowledged state and the same private snapshot in RX.
+; Reconnect uses this before replacing the hand or resuming input.
+rubp_hand_matches_state:
+        lda GAME_STATE_FRESH
+        beq .hm_mismatch
+        lda HASH_VALID
+        beq .hm_mismatch
+        lda SERIAL_RX_BUF+HDR_TYPE
+        cmp #MSG_HAND_SYNC
+        bne .hm_mismatch
+        lda SERIAL_RX_BUF+PAYLOAD_START+39
+        and #SYNC_F_HASH
+        beq .hm_mismatch
+        ldx #3
+.hm_turn:
+        lda SERIAL_RX_BUF+PAYLOAD_START+33,x
+        cmp OBSERVED_TURN,x
+        bne .hm_mismatch
+        dex
+        bpl .hm_turn
+        ldx #1
+.hm_spec:
+        lda SERIAL_RX_BUF+PAYLOAD_START+37,x
+        cmp OBSERVED_SPEC,x
+        bne .hm_mismatch
+        dex
+        bpl .hm_spec
+        ldx #7
+.hm_hash:
+        lda SERIAL_RX_BUF+PAYLOAD_START+40,x
+        cmp OBSERVED_HASH,x
+        bne .hm_mismatch
+        dex
+        bpl .hm_hash
+        lda #0
+        rts
+.hm_mismatch:
+        lda #1
+        rts
+
+rubp_build_sync_request:
         lda #MSG_SYNC_REQUEST
         jsr rubp_build_header
 
@@ -658,25 +718,7 @@ rubp_send_sync_request:
         ldx #6
         jsr write_obs_hash
 
-        ; Bit 1 turns the request into an acknowledgement, and only a GAME_STATE
-        ; we parsed ourselves earns it. No hash means nothing to acknowledge.
-        lda GAME_STATE_FRESH
-        beq .sr_send
-        lda HASH_VALID
-        beq .sr_send
-
-        lda SERIAL_TX_BUF+PAYLOAD_START+6
-        ora #SYNC_F_ACK
-        sta SERIAL_TX_BUF+PAYLOAD_START+6
-
-        ; One acknowledgement per pair: the next one waits for the next
-        ; GAME_STATE, so a lost frame downgrades us to asking rather than
-        ; letting us certify the same snapshot twice.
-        lda #0
-        sta GAME_STATE_FRESH
-
-.sr_send:
-        jmp rubp_send
+        rts
 
 ; -----------------------------------------------------------------------------
 ; Write the Flags byte + ObservedStateHash into the TX payload.

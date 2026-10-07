@@ -1,0 +1,4 @@
+make: Nothing to be done for `all'.
+assembled 37453 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/build/reconnect-regression/test.prg (load $0801)
+wrote /Users/stevehill/Projects/Rachel/rachel-c64/build/reconnect-regression/test.sym (symbol table)
+Reconnect hydration regression passed: matching metadata, legacy pairs, ordering, identity, rejection, partial sync and timeout

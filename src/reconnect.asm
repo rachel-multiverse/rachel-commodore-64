@@ -227,10 +227,17 @@ reconnect_attempt:
 .ra_hand:
         cpx #2
         bne .ra_next
+        lda SERVER_SYNC_ACK
+        beq .ra_parse_hand
+        jsr rubp_hand_matches_state
+        beq .ra_parse_hand
+        jsr rubp_send_sync_request
+        jmp .ra_next
+.ra_parse_hand:
         jsr rubp_parse_game_start
         lda SERVER_SYNC_ACK
         beq .ra_ready
-        jsr rubp_send_sync_request
+        jsr rubp_send_sync_ack
 .ra_ready:
 !if E2E_AUTOPLAY {
         lda #1

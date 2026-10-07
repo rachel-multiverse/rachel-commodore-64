@@ -25,6 +25,7 @@
 DCAP_WELCOME = $c000
 DCAP_GS      = $c010
 DCAP_SYNC    = $c030
+DCAP_PAIRS   = $c040
 DCAP_DONE    = $c0ff
 
         * = $0801
@@ -42,6 +43,7 @@ start:
         jsr test_welcome
         jsr test_game_state
         jsr test_sync_ack
+        jsr test_pair_checks
 
         lda #$aa
         sta DCAP_DONE
@@ -131,12 +133,12 @@ test_game_state:
         rts
 
 ; -----------------------------------------------------------------------------
-; SYNC ACK: the acknowledgement must describe the GAME_STATE we actually parsed.
+; Mismatched fixtures must ask for a coherent pair, never acknowledge one.
 ;
 ; GAME_STATE and HAND_SYNC both carry a state hash, and the golden fixtures
 ; deliberately carry different ones (GAME_STATE $ABC..., HAND_SYNC $1111...).
-; Feeding the pair in order and then acknowledging proves the client echoes
-; GAME_STATE's snapshot rather than whichever message arrived last.
+; The request still echoes GAME_STATE's snapshot instead of letting HAND_SYNC
+; overwrite public state that it never carried.
 ;
 ; A client that lets HAND_SYNC overwrite the hash returns a perfectly current
 ; value for a view it may never have received. The host takes it at its word,
@@ -152,8 +154,7 @@ test_sync_ack:
         jsr load_rx
         jsr rubp_parse_game_state
 
-        ; HAND_SYNC completes the pair. Its own turn number and hash must not
-        ; displace the ones we are about to acknowledge.
+        ; This HAND_SYNC does not match the GAME_STATE above.
         lda #<hand_sync_msg
         sta zp_ptr1
         lda #>hand_sync_msg
@@ -161,7 +162,7 @@ test_sync_ack:
         jsr load_rx
         jsr rubp_parse_game_start
 
-        jsr rubp_send_sync_request
+        jsr rubp_send_sync_ack
 
         lda SERIAL_TX_BUF+PAYLOAD_START+6       ; Flags
         sta DCAP_SYNC+0
@@ -181,6 +182,111 @@ test_sync_ack:
         iny
         cpy #8
         bne .sa_hash
+        rts
+
+; Public-only updates occur whenever two other seats take successive turns.
+; Watchdog requests must not turn that public half into a completed pair.
+test_pair_checks:
+        jsr load_public_state
+        jsr rubp_send_sync_request
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+1
+
+        jsr load_matching_pair
+        jsr rubp_parse_game_start
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+2
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+3
+
+        jsr load_public_state
+        inc SERIAL_RX_BUF+PAYLOAD_START+20
+        jsr rubp_parse_game_state
+        jsr rubp_send_sync_request
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+4
+
+        jsr load_matching_pair
+        lda #0
+        sta SERIAL_RX_BUF+PAYLOAD_START+39
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+5
+
+        jsr load_public_state
+        lda #0
+        sta SERIAL_RX_BUF+PAYLOAD_START+23
+        jsr rubp_parse_game_state
+        jsr load_matching_hand
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+6
+
+        lda #0
+        sta GAME_STATE_FRESH
+        sta HASH_VALID
+        jsr load_matching_hand
+        jsr rubp_send_sync_ack
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+7
+
+        lda #0
+        sta pair_field_index
+.pc_field:
+        jsr load_matching_pair
+        ldx pair_field_index
+        ldy pair_field_offsets,x
+        lda SERIAL_RX_BUF+PAYLOAD_START,y
+        eor #1
+        sta SERIAL_RX_BUF+PAYLOAD_START,y
+        jsr rubp_send_sync_ack
+        ldx pair_field_index
+        lda SERIAL_TX_BUF+PAYLOAD_START+6
+        sta DCAP_PAIRS+8,x
+        inc pair_field_index
+        lda pair_field_index
+        cmp #14
+        bne .pc_field
+        rts
+
+pair_field_index: !byte 0
+pair_field_offsets: !byte 33,34,35,36,37,38,40,41,42,43,44,45,46,47
+
+load_public_state:
+        lda #<game_state_msg
+        sta zp_ptr1
+        lda #>game_state_msg
+        sta zp_ptr1+1
+        jsr load_rx
+        jmp rubp_parse_game_state
+
+load_matching_pair:
+        jsr load_public_state
+load_matching_hand:
+        lda #<hand_sync_msg
+        sta zp_ptr1
+        lda #>hand_sync_msg
+        sta zp_ptr1+1
+        jsr load_rx
+        ; Same private cards, but metadata from the public golden vector.
+        ; The unmodified canonical HAND_SYNC above deliberately differs.
+        ldx #5
+.mh_meta:
+        lda game_state_msg+PAYLOAD_START+17,x
+        sta SERIAL_RX_BUF+PAYLOAD_START+33,x
+        dex
+        bpl .mh_meta
+        ldx #7
+.mh_hash:
+        lda game_state_msg+PAYLOAD_START+24,x
+        sta SERIAL_RX_BUF+PAYLOAD_START+40,x
+        dex
+        bpl .mh_hash
         rts
 
 ; -----------------------------------------------------------------------------

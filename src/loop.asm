@@ -165,7 +165,7 @@ check_network:
         ; would pull the pair down again on every HAND_SYNC.
         lda SERVER_SYNC_ACK
         beq .cn_done
-        jmp rubp_send_sync_request
+        jmp rubp_send_sync_ack
 
 .cn_turn_start:
         ; Turn started - update status

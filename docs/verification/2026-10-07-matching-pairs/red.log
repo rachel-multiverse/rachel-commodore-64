@@ -1,0 +1,35 @@
+assembled 1020 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/conformance/build/encoders.prg (load $0801)
+assembled 1216 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/conformance/build/decoders.prg (load $0801)
+RUBP codec conformance — C64 client vs rubp-messages-v1
+
+ENCODERS — message the client builds vs golden vector
+
+== hello      conformant (documented gaps only) ==
+   @ 4  C64=02 golden=01  [OK-TRANSPORT] RUBP v2 header; the v1 fixture predates the CRC
+   @14  C64=f1 golden=00  [OK-TRANSPORT] RUBP v2 CRC high byte (v1 timestamp here); verified below
+   @15  C64=98 golden=00  [OK-TRANSPORT] RUBP v2 CRC low byte (v1 timestamp here); verified below
+   @33  C64=02 golden=31  [OK-PLATFORM] platform ID 0x0002 (C64) vs fixture's 0x0031 (iOS)
+   @52  C64=01 golden=00  [OK-CAPABILITY] advertises CAP_SYNC_ACK; fixture client does not
+
+== play_card  conformant (documented gaps only) ==
+   @ 4  C64=02 golden=01  [OK-TRANSPORT] RUBP v2 header; the v1 fixture predates the CRC
+   @14  C64=e3 golden=00  [OK-TRANSPORT] RUBP v2 CRC high byte (v1 timestamp here); verified below
+   @15  C64=df golden=00  [OK-TRANSPORT] RUBP v2 CRC low byte (v1 timestamp here); verified below
+
+== draw_card  conformant (documented gaps only) ==
+   @ 4  C64=02 golden=01  [OK-TRANSPORT] RUBP v2 header; the v1 fixture predates the CRC
+   @14  C64=87 golden=00  [OK-TRANSPORT] RUBP v2 CRC high byte (v1 timestamp here); verified below
+   @15  C64=93 golden=00  [OK-TRANSPORT] RUBP v2 CRC low byte (v1 timestamp here); verified below
+
+DECODERS — value the parser extracted vs golden vector at spec offsets
+
+== welcome    PASS ==
+   all 4 fields extracted correctly
+
+== game_state PASS ==
+   all 25 fields extracted correctly
+
+== sync_ack   FAIL ==
+   mismatched pair must request, not ACK got=0x03 want=0x01
+
+RESULT: failures present — see FAIL / [BUG] / [UNEXPECTED] above.
