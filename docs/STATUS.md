@@ -18,6 +18,18 @@ the E2E build. [Red/green and artifact evidence](verification/2026-10-07-autopla
 
 ## Native iOS, Android and C64 table, 7 October 2026
 
+C64 `cb0aa70` also completes a second deal with iPhone finishing first at turn
+28 and spectating through turn 40. Android finishes second and C64 keeps two
+cards; native panels, C64 RAM/screen and all three wire audits agree on hash
+`884712020085955646`. Each seat reclaims exactly once and continues. The seed
+42 rerun still matches the original 66-turn hash below. Both runs validate
+C64's recovered state/hand ACK and every v2 CRC.
+
+[Two-deal evidence and native captures](https://github.com/rachel-multiverse/rachel-ios/tree/saturday-felt/docs/verification/2026-10-07/network-finish-and-spectating)
+record the exact test artifacts. The Ace/Jack autoplay correction above leaves
+the production PRG unchanged; this adds emulator evidence, not hardware or
+production-keyboard verification.
+
 C64 `16f7a9d` completes a 66-turn Go game alongside real iPhone and Android
 controls, with no bot seats. Each client reclaims its original seat exactly
 once after a forced socket drop and continues. C64 makes 21 accepted actions,
