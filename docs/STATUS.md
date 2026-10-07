@@ -1,5 +1,20 @@
 # C64 verification status
 
+## Native iOS, Android and C64 table, 7 October 2026
+
+C64 `16f7a9d` completes a 66-turn Go game alongside real iPhone and Android
+controls, with no bot seats. Each client reclaims its original seat exactly
+once after a forced socket drop and continues. C64 makes 21 accepted actions,
+Android 22 and iPhone 23. C64 finishes first, Android second and iPhone last
+with seven cards. Both native result panels, C64 RAM/screen and the three wire
+audits agree on final hash `12355524258195868592`. C64's v2 CRCs and matching
+restored-pair acknowledgement pass.
+
+[Runner, native captures and evidence](https://github.com/rachel-multiverse/rachel-ios/tree/saturday-felt/docs/verification/2026-10-07/three-way-crossplay)
+record the initial false-ACK failure, fix and successful rerun. This remains
+PAL Ultimate emulator autoplay with native mobile simulator input. Physical
+hardware, production C64 keyboard play and public TLS remain separate checks.
+
 ## State/hand acknowledgement correction, 7 October 2026
 
 A three-seat iOS/Android/C64 attempt exposed a false ACK while C64 waited for
@@ -14,8 +29,8 @@ The corrected conformance expectation failed before the fix with
 `mismatched pair must request, not ACK got=0x03 want=0x01`. Three encoder checks,
 46 decoder/request checks, 22 pair checks and 13 reconnect hydration cases pass.
 Production build, transport/pin checks and ACME byte parity pass. The unchanged
-strict mixed-game audit will be rerun separately; these tests alone do not
-claim a completed three-client game or physical hardware support.
+strict mixed-game audit subsequently passed as recorded above; physical
+hardware support remains unverified.
 
 [Fix evidence](verification/2026-10-07-matching-pairs/) includes the red/green
 checks and exact production source/artifact hashes.
