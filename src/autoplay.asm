@@ -35,8 +35,8 @@ autoplay_turn:
         sta AUTOPLAY_WAITING
 
         ; A live attack can only be answered by the rank already on the discard:
-        ; 2s counter 2s, 7s counter 7s, and a jack answers a jack (a red one
-        ; blunts the black jack's five). Anything else is a draw.
+        ; 2s counter 2s, 7s counter 7s, and a jack answers a black jack.
+        ; A red jack on top leaves a residual penalty that cannot be countered.
         lda PENDING_DRAWS
         ora PENDING_SKIPS
         beq .ap_normal
@@ -44,17 +44,25 @@ autoplay_turn:
         lda DISCARD_TOP
         and #$3f
         sta zp_temp3
+        cmp #11
+        bne .ap_counter_ready
+        lda DISCARD_TOP
+        bmi .ap_counter_ready   ; Only suits 2/3 are black.
+        jmp .ap_draw
+.ap_counter_ready:
         ldx #0
 .ap_counter_scan:
         cpx zp_hand_count
-        bcs .ap_draw
+        bcc .ap_counter_card
+        jmp .ap_draw
+.ap_counter_card:
         lda MY_HAND,x
         and #$3f
         cmp zp_temp3
         beq .ap_play
         inx
         bne .ap_counter_scan
-        beq .ap_draw
+        jmp .ap_draw
 
 ; -----------------------------------------------------------------------------
 ; No attack pending: play the first card that follows the discard.
@@ -67,8 +75,6 @@ autoplay_turn:
 
         lda MY_HAND,x
         and #$3f
-        cmp #14                 ; An ace plays on anything and names a suit.
-        beq .ap_play_ace
         sta zp_temp3            ; this card's rank
 
         ; A live nomination replaces the discard's own suit as the thing to
@@ -94,6 +100,11 @@ autoplay_turn:
         beq .ap_draw
 
 .ap_match_nomination:
+        lda MY_HAND,x
+        and #$3f
+        cmp #14                 ; Another ace may change an existing nomination.
+        beq .ap_play_ace
+        lda NOMINATED_SUIT
         sta zp_temp3            ; the nominated suit
         lda MY_HAND,x
         jsr autoplay_card_suit
@@ -107,6 +118,10 @@ autoplay_turn:
 ; Play the card at X, with no suit nomination.
 ; -----------------------------------------------------------------------------
 .ap_play:
+        lda MY_HAND,x
+        and #$3f
+        cmp #14                 ; A suit/rank-matched ace still needs nomination.
+        beq .ap_play_ace
         lda #$ff                ; no nomination
         sta zp_temp2
         jmp autoplay_send_card

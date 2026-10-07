@@ -1,0 +1,17 @@
+asm198x --dialect acme --prg -I . --listing=build/report.txt src/main.asm -o build/rachel.prg
+assembled 7716 byte(s) -> build/rachel.prg (load $0801)
+wrote build/report.txt (listing)
+Built: build/rachel.prg
+assembled 35339 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/build/autoplay-regression/fixture.prg (load $0801)
+wrote /Users/stevehill/Projects/Rachel/rachel-c64/build/autoplay-regression/fixture.sym (symbol table)
+PASS ace_not_wild
+PASS unmatched_ace_draws
+PASS ace_matches_suit
+PASS ace_matches_rank
+PASS ace_changes_nomination
+PASS nomination_matches_suit
+PASS red_jack_residual_draws
+PASS black_jack_can_be_countered
+PASS two_counter_precedes_ace
+PASS seven_counter_precedes_ace
+All 10 actual assembly move/encoder cases passed

@@ -1,0 +1,15 @@
+{
+  "headBeforeCommit": "cc52ac4c4251a73a7a967148d3787647d430fca6",
+  "hashes": {
+    "src/autoplay.asm": "2ca78a812f628ee08a2e66f2cf3a29a84493b2df77dc0eb495120ecf4a890059",
+    "tests/autoplay_regression.py": "55e85025f16e06b5ad2ad2ea67e8907b638243e06cf917b93c5dad6f0b78785c",
+    "Makefile": "be1e67f13608323a86efa38336e4eea8df32ad852b8c4e998e871b1d7a165fa4",
+    "build/rachel.prg": "6d212ab983739bc48098d7b6fc1c863cad188c9c2822d9c686e5e56579d689ef",
+    "build/rachel-e2e.prg": "a6236876c9b8fbe56489ee091a49cfc244e742a2af3c72451f4293efaeddc70a",
+    "build/autoplay-regression/fixture.prg": "b8ae07c2f69c9c59da09810ce6e5720e7bbf6ef5989bceab95d5f3d127d51825"
+  },
+  "cases": 10,
+  "scope": "test-only autoplay; production PRG unchanged",
+  "productionMatchesPreviousSha256": true,
+  "emulatorSha256": "689f2219e7e8a475ad1987efb4ba2b68a1cd470652e57d3d4df9cf0b1fcdf9ae"
+}

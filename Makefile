@@ -92,6 +92,12 @@ ui-test:
 
 .PHONY: ui-test
 
+# Actual assembly move policy and RUBP encoders; requires local C64 ROMs.
+autoplay-test:
+	python3.13 tests/autoplay_regression.py
+
+.PHONY: autoplay-test
+
 production-ui-test: $(OUT)
 	python3 tests/production_ui.py
 

@@ -1,5 +1,21 @@
 # C64 verification status
 
+## Broader autoplay scenarios, 7 October 2026
+
+The test-only move policy no longer treats an ordinary Ace as wild and no
+longer counters the residual draw penalty after a red Jack. These mistakes
+were exposed while selecting a native iPhone early-finish scenario. The Go
+probe reproduced the earlier 66-turn game exactly before finding rejected
+moves in other seeds. Actual assembly regressions then failed on the off-suit
+Ace and residual-Jack cases before the fix.
+
+`make autoplay-test` now checks ten cases through the real autoplay routine
+and RUBP encoders under the ROM-backed emulator, including Ace suit/rank
+matches, nominations, ordinary draws and mandatory counters. Every frame's
+CRC is checked. Production transport/pin checks and ACME parity pass; production
+keyboard/solo behaviour is unchanged because autoplay is compiled only into
+the E2E build. [Red/green and artifact evidence](verification/2026-10-07-autoplay-rules/).
+
 ## Native iOS, Android and C64 table, 7 October 2026
 
 C64 `16f7a9d` completes a 66-turn Go game alongside real iPhone and Android

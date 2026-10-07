@@ -1,0 +1,20 @@
+make: Nothing to be done for `all'.
+assembled 35339 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/build/autoplay-regression/fixture.prg (load $0801)
+wrote /Users/stevehill/Projects/Rachel/rachel-c64/build/autoplay-regression/fixture.sym (symbol table)
+PASS ace_matches_suit
+PASS ace_matches_rank
+PASS ace_changes_nomination
+PASS nomination_matches_suit
+PASS black_jack_can_be_countered
+PASS two_counter_precedes_ace
+PASS seven_counter_precedes_ace
+Traceback (most recent call last):
+  File "/Users/stevehill/Projects/Rachel/rachel-c64/tests/autoplay_regression.py", line 162, in <module>
+    main()
+    ~~~~^^
+  File "/Users/stevehill/Projects/Rachel/rachel-c64/tests/autoplay_regression.py", line 157, in main
+    assert not failures, "\n".join(failures)
+           ^^^^^^^^^^^^
+AssertionError: ace_not_wild: got (4, 1, 14, 0), want (4, 1, 133, 255)
+unmatched_ace_draws: got (4, 1, 14, 0), want (5, 0, 1, 0)
+red_jack_residual_draws: got (4, 1, 203, 255), want (5, 0, 1, 0)
