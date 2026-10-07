@@ -1,0 +1,36 @@
+/Users/stevehill/Projects/Rachel/rachel-c64/conformance/run.py:318: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/94/p_ng_dqx7tq9rx2rcw0y8zth0000gn/T/tmpcthfo2r0/fixture.sha256' mode='r' encoding='UTF-8'>
+  want = open(FIXTURES_SHA).read().split()[0]
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/stevehill/Projects/Rachel/rachel-c64/conformance/run.py:319: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/94/p_ng_dqx7tq9rx2rcw0y8zth0000gn/T/tmpcthfo2r0/fixture.json'>
+  got = hashlib.sha256(open(FIXTURES, "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+FIXTURES DO NOT MATCH THE PINNED HASH
+  expected 19fc5b26092a5733a14f9b591aba844f8e317d306e4b1e56d8b3ecbc2a0eafca
+  found    18ce26d407d1488b07f89b2e656b8a8d5b12a4a1ac08daf3b437faf968c52824
+
+rubp-messages-v1.json has been edited since it was pinned.
+These vectors are shared - the canonical copy lives at
+  https://github.com/rachel-multiverse/protocol
+Run ./refresh-vectors.sh to pull it and re-pin, or restore the
+file. Do not edit it here: a client's private idea of the wire
+format is the one bug this harness cannot catch.
+.F/Users/stevehill/Projects/Rachel/rachel-c64/conformance/run.py:318: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/94/p_ng_dqx7tq9rx2rcw0y8zth0000gn/T/tmpdq49j0tg/fixture.sha256' mode='r' encoding='UTF-8'>
+  want = open(FIXTURES_SHA).read().split()[0]
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/stevehill/Projects/Rachel/rachel-c64/conformance/run.py:319: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/94/p_ng_dqx7tq9rx2rcw0y8zth0000gn/T/tmpdq49j0tg/fixture.json'>
+  got = hashlib.sha256(open(FIXTURES, "rb").read()).hexdigest()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.
+======================================================================
+FAIL: test_missing_pin_fails (__main__.FixturePinTests.test_missing_pin_fails)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/stevehill/Projects/Rachel/rachel-c64/tests/test_conformance_pin.py", line 35, in test_missing_pin_fails
+    with self.assertRaises(SystemExit) as failure:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: SystemExit not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.013s
+
+FAILED (failures=1)

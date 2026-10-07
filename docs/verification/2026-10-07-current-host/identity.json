@@ -1,0 +1,46 @@
+{
+  "c64": {
+    "head": "6f2e3d356e9f417d5d6f9d59eb52a0420857c526",
+    "worktreeStatus": [
+      "Clean source at start; task-generated build output only at first artifact capture. Subsequent changes affect conformance/tests/docs, not client assembly."
+    ]
+  },
+  "go": {
+    "head": "e3f6c6fec52effdd51bebb6dab5d86c59b61a69d",
+    "worktreeStatus": []
+  },
+  "emulator": {
+    "head": "f9f6c77af369ca3687d6854e3d8406831edfb7e5",
+    "worktreeStatusCount": 214,
+    "sourceNote": "Pre-existing dirty emulator checkout, including shared shell, VIC-II and C64 runtime changes. No emulator source modified by this task. HEAD alone does not identify this binary; SHA256 below identifies the tested executable."
+  },
+  "emulatorBinary": {
+    "path": "/Users/stevehill/Projects/198x/Emu198x/emu198x/target/release/emu198x-c64",
+    "bytes": 2595392,
+    "sha256": "689f2219e7e8a475ad1987efb4ba2b68a1cd470652e57d3d4df9cf0b1fcdf9ae"
+  },
+  "productionPRG": {
+    "path": "/Users/stevehill/Projects/Rachel/rachel-c64/build/rachel.prg",
+    "bytes": 7623,
+    "sha256": "f6270690fd4f63bb2393b291e33040f3f05fe3223aaef7949a66a9da501a8f72"
+  },
+  "autoplayPRG": {
+    "path": "/Users/stevehill/Projects/Rachel/rachel-c64/build/rachel-e2e.prg",
+    "bytes": 7796,
+    "sha256": "e2e8b1969f44adb19487e987a44bdb9caa0e70a7be313be730ca955b6081e149"
+  },
+  "fixtures": {
+    "protocolHead": "2d1c7b5676b0006e44d1286b4d386480d23b8c9c",
+    "sha256": "d7d87d041145a668830081d2952296851b4f6c95391052f3d16d534dab401d85",
+    "bytesEqualCanonicalCheckout": true
+  },
+  "scenario": {
+    "seed": 2,
+    "model": "pal",
+    "transport": "ultimate",
+    "humanSeats": 1,
+    "aiSeats": 1,
+    "autoplay": true,
+    "physicalHardware": false
+  }
+}

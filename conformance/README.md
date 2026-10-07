@@ -10,7 +10,7 @@ Those vectors are shared, and the canonical copy lives in
 [rachel-multiverse/protocol](https://github.com/rachel-multiverse/protocol).
 They are vendored here rather than fetched, so this stays runnable offline —
 and pinned in `rubp-messages-v1.sha256`, which `run.py` checks before it does
-anything else. Edit the JSON and the harness refuses to run; the fix is
+anything else. A missing pin or modified JSON makes the harness fail; the fix is
 `./refresh-vectors.sh`, not a local edit. A client's private idea of the wire
 format is the one bug this harness cannot catch.
 
@@ -51,12 +51,17 @@ golden vector. Each differing byte is classified:
 | Status | Meaning |
 |--------|---------|
 | `OK-PLATFORM` | Legitimate platform-identity difference (C64 platform ID `0x0002` vs the fixture's iOS `0x0031`) — not a bug |
-| `GAP` | A spec field the client deliberately does not emit (e.g. `reconnectToken` — see decision 0002) — documented |
+| `OK-TRANSPORT` | RUBP v2 version and independently verified CRC, compared with v1 vectors |
+| `OK-CAPABILITY` | Advertised state/hand acknowledgement capability |
 | `BUG` | A field the client emits **incorrectly** — fails the run |
 | `UNEXPECTED` | A difference with no explanation on file — fails the run |
 
 The classifications live in the `KNOWN` table in `run.py`; an unexplained change
 in the client's output surfaces as `UNEXPECTED` rather than slipping through.
+Reconnect tokens are exercised by the encoder fixture and reconnect tests;
+the C64-specific reconnect decision supersedes the older vintage restriction.
+The vendored pack also contains portrait fixtures, but this harness only
+claims the explicitly listed encoder/decoder coverage.
 
 **Decoders** (`decoders.asm`) — the two parsers with golden vectors:
 `rubp_parse_welcome` and `rubp_parse_game_state`. The harness loads the golden

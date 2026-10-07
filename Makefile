@@ -81,6 +81,7 @@ report: $(OUT)
 
 test: $(OUT)
 	python3 tests/test_transport.py
+	python3 tests/test_conformance_pin.py
 
 .PHONY: all test run test-net conformance reference-parity clean report \
 	e2e-prg e2e-full-game solo-selftest link-loss

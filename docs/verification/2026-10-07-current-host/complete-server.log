@@ -1,0 +1,44 @@
+2026/10/07 08:51:03.398632 Rachel Server starting...
+2026/10/07 08:51:03.398956   Address: 127.0.0.1:51490
+2026/10/07 08:51:03.398963   Min players: 2
+2026/10/07 08:51:03.398968   Auto-start: 1ms
+2026/10/07 08:51:03.398975   Verbose: false
+2026/10/07 08:51:03.398979   Hex dump: false
+2026/10/07 08:51:03.398983   AI players: 1
+2026/10/07 08:51:03.398987   AI delay: 0s
+2026/10/07 08:51:03.398991   VIC-20 write interval: 0s
+2026/10/07 08:51:03.398994   Random seed: 2
+2026/10/07 08:51:03.399122 Rachel server listening on 127.0.0.1:51490
+2026/10/07 08:51:03.414113 New connection from 127.0.0.1:51504
+2026/10/07 08:51:03.415201 Read error: EOF
+2026/10/07 08:51:03.415224 Session closed:  (player 0)
+2026/10/07 08:51:14.679719 New connection from 127.0.0.1:51546
+2026/10/07 08:51:14.701131 Player C64 PLAYER connected from Commodore 64
+2026/10/07 08:51:14.701164 Player joined: C64 PLAYER (ID 0) from Commodore 64 - 1/1 humans needed
+2026/10/07 08:51:14.701202 AI player added: Bot 1 (ID 1)
+2026/10/07 08:51:14.701235 Starting game in 1ms
+2026/10/07 08:51:14.702441 Starting game with 2 players
+2026/10/07 08:51:15.492289 AI Bot 1 plays: [67]
+2026/10/07 08:51:16.049374 AI Bot 1 draws 2 cards
+2026/10/07 08:51:16.701960 AI Bot 1 plays: [74]
+2026/10/07 08:51:17.365312 AI Bot 1 plays: [77]
+2026/10/07 08:51:17.812910 AI Bot 1 plays: [142]
+2026/10/07 08:51:18.257413 AI Bot 1 plays: [198]
+2026/10/07 08:51:18.799687 AI Bot 1 plays: [11]
+2026/10/07 08:51:19.218108 AI Bot 1 draws 1 cards
+2026/10/07 08:51:19.646345 AI Bot 1 draws 1 cards
+2026/10/07 08:51:20.173411 AI Bot 1 plays: [13]
+2026/10/07 08:51:20.723451 AI Bot 1 plays: [205]
+2026/10/07 08:51:21.694592 AI Bot 1 plays: [206]
+2026/10/07 08:51:22.367553 AI Bot 1 plays: [194]
+2026/10/07 08:51:22.848857 AI Bot 1 draws 1 cards
+2026/10/07 08:51:23.286330 AI Bot 1 draws 1 cards
+2026/10/07 08:51:23.834632 AI Bot 1 draws 2 cards
+2026/10/07 08:51:24.278763 AI Bot 1 plays: [10]
+2026/10/07 08:51:24.790768 AI Bot 1 draws 1 cards
+2026/10/07 08:51:25.488710 AI Bot 1 plays: [132]
+2026/10/07 08:51:26.126925 AI Bot 1 plays: [134]
+2026/10/07 08:51:26.652915 AI Bot 1 plays: [70]
+2026/10/07 08:51:27.952017 AI Bot 1 draws 1 cards
+2026/10/07 08:51:29.024492 Game finished
+2026/10/07 08:51:29.024606 Session closed: C64 PLAYER (player 0)

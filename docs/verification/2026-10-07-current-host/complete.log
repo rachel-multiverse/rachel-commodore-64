@@ -1,0 +1,4 @@
+asm198x --dialect acme --prg -I . src/main.asm -o build/rachel-e2e.prg
+assembled 7796 byte(s) -> build/rachel-e2e.prg (load $0801)
+Built: build/rachel-e2e.prg
+Complete deterministic C64 game passed over ultimate: /Users/stevehill/Projects/Rachel/rachel-c64/build/2026-10-07-current-host-complete

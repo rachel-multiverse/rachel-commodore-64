@@ -1,0 +1,17 @@
+FIXTURES DO NOT MATCH THE PINNED HASH
+  expected 19fc5b26092a5733a14f9b591aba844f8e317d306e4b1e56d8b3ecbc2a0eafca
+  found    18ce26d407d1488b07f89b2e656b8a8d5b12a4a1ac08daf3b437faf968c52824
+
+rubp-messages-v1.json has been edited since it was pinned.
+These vectors are shared - the canonical copy lives at
+  https://github.com/rachel-multiverse/protocol
+Run ./refresh-vectors.sh to pull it and re-pin, or restore the
+file. Do not edit it here: a client's private idea of the wire
+format is the one bug this harness cannot catch.
+.FIXTURE PIN MISSING: /var/folders/94/p_ng_dqx7tq9rx2rcw0y8zth0000gn/T/tmp3zbfvimt/fixture.sha256
+Run ./refresh-vectors.sh to restore the canonical vectors and pin.
+..
+----------------------------------------------------------------------
+Ran 3 tests in 0.008s
+
+OK

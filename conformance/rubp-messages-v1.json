@@ -20,6 +20,23 @@
       "hex": "5241434801010021ffff004200000000416c69636500000000000000000000000031000101020304050607080000000000000000000000000000000000000000"
     },
     {
+      "name": "hello_with_look",
+      "type": "HELLO",
+      "type_code": "0x01",
+      "summary": "Client connection / slot claim, with a chosen portrait",
+      "fields": {
+        "playerName": "Alice",
+        "platformID": "0x0031 (iOS)",
+        "specVersion": "0x0001",
+        "sequence": "0x0021",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042",
+        "reconnectToken": "0x0102030405060708",
+        "look": "headwear 6, eyewear 5, facialHair 2, skin 3, signature 5 → 9a ce 80"
+      },
+      "hex": "5241434801010021ffff004200000000416c69636500000000000000000000000031000101020304050607080000000000000000009ace800000000000000000"
+    },
+    {
       "name": "welcome",
       "type": "WELCOME",
       "type_code": "0x02",
@@ -75,7 +92,7 @@
       "fields": {
         "currentPlayerIndex": "1",
         "direction": "1 (counter-clockwise)",
-        "topCard": "J♦ (0x4B)",
+        "topCard": "J♦ (0x4D)",
         "nominatedSuit": "0x02 (clubs)",
         "pendingDraws": "4",
         "pendingSkips": "1",
@@ -201,6 +218,36 @@
         "gameID": "0x0042"
       },
       "hex": "524143480110002600010042000000000000000b0001015555666677778888000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "player_list_with_look",
+      "type": "PLAYER_LIST",
+      "type_code": "0x0C",
+      "summary": "Host relays every lobby seat's platform and chosen portrait",
+      "fields": {
+        "playerCount": "3",
+        "players": [
+          {
+            "playerID": "0",
+            "platformID": "0x0031 (iOS)",
+            "look": "headwear 6, eyewear 5, facialHair 2, skin 3, signature 5 → 9a ce 80"
+          },
+          {
+            "playerID": "1",
+            "platformID": "0x0031 (iOS)",
+            "look": "none"
+          },
+          {
+            "playerID": "2",
+            "platformID": "0x0002 (C64)",
+            "look": "none"
+          }
+        ],
+        "sequence": "0x0030",
+        "playerID": "0xFFFF",
+        "gameID": "0x0042"
+      },
+      "hex": "52414348010c0030ffff004200000000030000319ace800100310000000200020000000000000000000000000000000000000000000000000000000000000000"
     }
   ]
 }

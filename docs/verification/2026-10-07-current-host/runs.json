@@ -1,0 +1,18 @@
+[
+  {
+    "scenario": "complete",
+    "script": "tests/full_game_e2e.py",
+    "output": "/Users/stevehill/Projects/Rachel/rachel-c64/build/2026-10-07-current-host-complete",
+    "port": 51490,
+    "exitCode": 0,
+    "seconds": 383.23
+  },
+  {
+    "scenario": "reconnect",
+    "script": "tests/reconnect_e2e.py",
+    "output": "/Users/stevehill/Projects/Rachel/rachel-c64/build/2026-10-07-current-host-reconnect",
+    "port": 52015,
+    "exitCode": 0,
+    "seconds": 77.23
+  }
+]

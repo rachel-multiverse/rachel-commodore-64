@@ -1,5 +1,39 @@
 # C64 verification status
 
+## Current Go host checked, 7 October 2026
+
+C64 assembly `6f2e3d3` completes a PAL emulator game over Ultimate against Go
+`e3f6c6f`, the same host revision used for the complete native iOS/Android run.
+A second complete game passes after two forced socket drops, with the same
+token, game, seat and private hand restored each time. Both final screenshots
+were inspected and show `GAME OVER - YOU WENT OUT`; neither host log contains
+a rejected client action. These runs use seed 2, one C64 autoplay seat and one
+Go bot. They do not put C64 and a native mobile client in the same game.
+
+The production PRG was rebuilt (7,623 bytes); transport checks passed. Codec
+conformance passed for three encoders and 46 decoder/acknowledgement checks.
+The vendored pack was refreshed to the canonical protocol checkout
+`2d1c7b5` (SHA256 `d7d87d041145a668830081d2952296851b4f6c95391052f3d16d534dab401d85`).
+Its existing frame bytes are unchanged; it adds portrait examples and corrects
+a card-label annotation. Portrait examples are not additional harness coverage.
+
+A missing checksum file previously bypassed fixture validation. Its regression
+failed before the fix (`SystemExit not raised`); all three valid/missing/changed
+pin tests now pass and run under `make test`. No client assembly changed.
+
+[Evidence](verification/2026-10-07-current-host/) retains source/PRG/emulator
+identity, test output, logs and screenshots. The headless emulator was built
+with locked offline dependencies and two jobs. Its checkout had pre-existing
+changes, including C64/shared code; the recorded executable hash identifies
+the tested binary, rather than its Git HEAD alone.
+
+This is emulator autoplay evidence. Physical Ultimate hardware, production
+keyboard play, native-mobile/C64 mixed tables and current-host user-port
+reconnect remain separate checks. The earlier 300 ms paced user-port evidence
+below is not extended by these Ultimate runs.
+
+## Earlier verification, 5 September 2026
+
 Checked locally on 5 September 2026 against `bf633af` and the subsequent
 working-tree display/input fixes.
 This is a playable development build, not a claim of physical-hardware verification.

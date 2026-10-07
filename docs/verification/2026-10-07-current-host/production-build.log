@@ -1,0 +1,6 @@
+asm198x --dialect acme --prg -I . --listing=build/report.txt src/main.asm -o build/rachel.prg
+assembled 7623 byte(s) -> build/rachel.prg (load $0801)
+wrote build/report.txt (listing)
+Built: build/rachel.prg
+python3 tests/test_transport.py
+Ultimate UCI and Sven Petersen Rev. 2 transport checks passed

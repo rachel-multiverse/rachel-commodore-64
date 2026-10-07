@@ -1,0 +1,35 @@
+[
+  {
+    "action": "run_frames",
+    "frames": 200
+  },
+  {
+    "action": "type_string",
+    "text": "RUN\n",
+    "hold_frames": 2,
+    "settle_frames": 40
+  },
+  {
+    "action": "run_frames",
+    "frames": 120
+  },
+  {
+    "action": "press_key",
+    "key": "Space",
+    "hold_frames": 3
+  },
+  {
+    "action": "run_frames",
+    "frames": 60
+  },
+  {
+    "action": "type_string",
+    "text": "127.0.0.1:51490\n",
+    "hold_frames": 2,
+    "settle_frames": 40
+  },
+  {
+    "action": "run_frames",
+    "frames": 20000
+  }
+]

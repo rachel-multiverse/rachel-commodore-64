@@ -1,0 +1,16 @@
+{
+  "command": [
+    "cargo",
+    "build",
+    "--locked",
+    "--offline",
+    "--release",
+    "-p",
+    "emu198x-c64",
+    "--no-default-features",
+    "--jobs",
+    "2"
+  ],
+  "exitCode": 0,
+  "seconds": 44.57
+}

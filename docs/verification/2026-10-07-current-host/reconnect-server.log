@@ -1,0 +1,52 @@
+2026/10/07 08:57:26.063891 Rachel Server starting...
+2026/10/07 08:57:26.065079   Address: 127.0.0.1:52015
+2026/10/07 08:57:26.065085   Min players: 2
+2026/10/07 08:57:26.065089   Auto-start: 1ms
+2026/10/07 08:57:26.065097   Verbose: false
+2026/10/07 08:57:26.065100   Hex dump: false
+2026/10/07 08:57:26.065103   AI players: 1
+2026/10/07 08:57:26.065106   AI delay: 0s
+2026/10/07 08:57:26.065109   VIC-20 write interval: 0s
+2026/10/07 08:57:26.065113   Random seed: 2
+2026/10/07 08:57:26.065508 Rachel server listening on 127.0.0.1:52015
+2026/10/07 08:57:26.111781 New connection from 127.0.0.1:52020
+2026/10/07 08:57:26.111828 Read error: EOF
+2026/10/07 08:57:26.111856 Session closed:  (player 0)
+2026/10/07 08:57:35.522932 New connection from 127.0.0.1:52028
+2026/10/07 08:57:35.569603 Player C64 PLAYER connected from Commodore 64
+2026/10/07 08:57:35.569641 Player joined: C64 PLAYER (ID 0) from Commodore 64 - 1/1 humans needed
+2026/10/07 08:57:35.569684 AI player added: Bot 1 (ID 1)
+2026/10/07 08:57:35.569719 Starting game in 1ms
+2026/10/07 08:57:35.570887 Starting game with 2 players
+2026/10/07 08:57:36.387899 AI Bot 1 plays: [67]
+2026/10/07 08:57:36.778603 New connection from 127.0.0.1:52030
+2026/10/07 08:57:36.798951 Player C64 PLAYER connected from Commodore 64
+2026/10/07 08:57:36.799091 Player C64 PLAYER reclaimed player 0 in game 1
+2026/10/07 08:57:37.211377 AI Bot 1 draws 2 cards
+2026/10/07 08:57:37.613064 New connection from 127.0.0.1:52032
+2026/10/07 08:57:37.659500 Player C64 PLAYER connected from Commodore 64
+2026/10/07 08:57:37.659641 Player C64 PLAYER reclaimed player 0 in game 1
+2026/10/07 08:57:38.045002 AI Bot 1 plays: [74]
+2026/10/07 08:57:38.447207 AI Bot 1 plays: [77]
+2026/10/07 08:57:38.896503 AI Bot 1 plays: [142]
+2026/10/07 08:57:39.333793 AI Bot 1 plays: [198]
+2026/10/07 08:57:39.797835 AI Bot 1 plays: [11]
+2026/10/07 08:57:40.199831 AI Bot 1 draws 1 cards
+2026/10/07 08:57:40.607618 AI Bot 1 draws 1 cards
+2026/10/07 08:57:41.073539 AI Bot 1 plays: [13]
+2026/10/07 08:57:41.470790 AI Bot 1 plays: [205]
+2026/10/07 08:57:42.266498 AI Bot 1 plays: [206]
+2026/10/07 08:57:42.660331 AI Bot 1 plays: [194]
+2026/10/07 08:57:43.080582 AI Bot 1 draws 1 cards
+2026/10/07 08:57:43.527209 AI Bot 1 draws 1 cards
+2026/10/07 08:57:43.944022 AI Bot 1 draws 2 cards
+2026/10/07 08:57:44.374481 AI Bot 1 plays: [10]
+2026/10/07 08:57:44.776555 AI Bot 1 draws 1 cards
+2026/10/07 08:57:45.166123 AI Bot 1 plays: [132]
+2026/10/07 08:57:45.581605 AI Bot 1 plays: [134]
+2026/10/07 08:57:45.966798 AI Bot 1 plays: [70]
+2026/10/07 08:57:46.445130 AI Bot 1 draws 1 cards
+2026/10/07 08:57:46.779334 Game finished
+2026/10/07 08:57:46.779448 Session closed: C64 PLAYER (player 0)
+2026/10/07 08:57:46.779451 Session closed:  (player 0)
+2026/10/07 08:57:46.779471 Session closed:  (player 0)

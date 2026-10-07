@@ -301,7 +301,7 @@ def check_decoders(fixtures):
     return failed
 
 
-def check_fixtures_pinned():
+def check_fixtures_pinned() -> None:
     """Refuse to run against vectors that no longer match the ones we pinned.
 
     The vectors are vendored rather than fetched, because this harness runs
@@ -314,9 +314,13 @@ def check_fixtures_pinned():
     on; no offline check can. `./refresh-vectors.sh` is how you find that out.
     """
     if not os.path.exists(FIXTURES_SHA):
-        return
-    want = open(FIXTURES_SHA).read().split()[0]
-    got = hashlib.sha256(open(FIXTURES, "rb").read()).hexdigest()
+        print(f"FIXTURE PIN MISSING: {FIXTURES_SHA}", file=sys.stderr)
+        print("Run ./refresh-vectors.sh to restore the canonical vectors and pin.", file=sys.stderr)
+        sys.exit(2)
+    with open(FIXTURES_SHA) as pin:
+        want = pin.read().split()[0]
+    with open(FIXTURES, "rb") as fixtures:
+        got = hashlib.sha256(fixtures.read()).hexdigest()
     if got != want:
         print("FIXTURES DO NOT MATCH THE PINNED HASH", file=sys.stderr)
         print(f"  expected {want}", file=sys.stderr)
