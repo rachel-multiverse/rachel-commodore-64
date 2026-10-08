@@ -24,5 +24,6 @@ build/production-ui/
 build/reconnect-output/
 build/reconnect-userport-output/
 build/reconnect-regression/
+build/lobby-regression/
 build/autoplay-regression/
 tests/__pycache__/
