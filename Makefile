@@ -111,6 +111,12 @@ reconnect-e2e:
 
 .PHONY: reconnect-test reconnect-e2e
 
+# Execute both lobby wire versions and verify reseated action identities.
+lobby-test:
+	python3.13 tests/lobby_regression.py
+
+.PHONY: lobby-test
+
 # Serial clients need spacing between server frames at 2400 baud.
 reconnect-userport-e2e:
 	RACHEL_E2E_TRANSPORT=userport RACHEL_E2E_WRITE_INTERVAL=300ms RACHEL_E2E_GAME_FRAMES=7000 RACHEL_E2E_OUTPUT=reconnect-userport-output python3 tests/reconnect_e2e.py

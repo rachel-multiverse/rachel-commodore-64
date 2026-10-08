@@ -241,6 +241,10 @@ wait_for_game:
         ; Check message type
         jsr rubp_get_type
 
+        ; A departure can reseat the waiting lobby before the deal.
+        cmp #MSG_WELCOME
+        beq .wfg_welcome
+
         ; GAME_START?
         cmp #MSG_GAME_START
         beq .wfg_game_start
@@ -250,6 +254,12 @@ wait_for_game:
         beq .wfg_game_state
 
         ; Keep waiting for other message types
+        jmp .wfg_loop
+
+.wfg_welcome:
+        jsr rubp_parse_welcome
+        lda zp_player_id
+        sta zp_my_index
         jmp .wfg_loop
 
 .wfg_game_start:
