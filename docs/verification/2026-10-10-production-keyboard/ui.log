@@ -1,0 +1,5 @@
+python3 tests/ui_regression.py
+make[1]: Nothing to be done for `all'.
+assembled 35345 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/build/ui-regression/test.prg (load $0801)
+wrote /Users/stevehill/Projects/Rachel/rachel-c64/build/ui-regression/test.sym (symbol table)
+UI regression passed: layout, 32-card hand, stale clearing, keyboard, hand replacement/append, Ace suit and results

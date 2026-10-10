@@ -1,0 +1,10 @@
+python3 tests/ui_regression.py
+make[1]: Nothing to be done for `all'.
+assembled 35345 byte(s) -> /Users/stevehill/Projects/Rachel/rachel-c64/build/ui-regression/test.prg (load $0801)
+wrote /Users/stevehill/Projects/Rachel/rachel-c64/build/ui-regression/test.sym (symbol table)
+Traceback (most recent call last):
+  File "/Users/stevehill/Projects/Rachel/rachel-c64/tests/ui_regression.py", line 30, in <module>
+    assert state[17]<state[16], f'cursor outside replacement hand: cursor={state[17]}, count={state[16]}'
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: cursor outside replacement hand: cursor=5, count=5
+make: *** [ui-test] Error 1

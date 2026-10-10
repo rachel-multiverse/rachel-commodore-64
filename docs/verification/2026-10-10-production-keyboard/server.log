@@ -1,0 +1,38 @@
+2026/10/10 19:59:23.063623 Rachel Server starting...
+2026/10/10 19:59:23.063730   Address: 127.0.0.1:54638
+2026/10/10 19:59:23.063736   Min players: 2
+2026/10/10 19:59:23.063741   Auto-start: 1s
+2026/10/10 19:59:23.063748   Verbose: false
+2026/10/10 19:59:23.063753   Hex dump: false
+2026/10/10 19:59:23.063756   AI players: 1
+2026/10/10 19:59:23.063760   AI delay: 0s
+2026/10/10 19:59:23.063764   VIC-20 write interval: 300ms
+2026/10/10 19:59:23.063768   Random seed: 2
+2026/10/10 19:59:23.063827 Rachel server listening on 127.0.0.1:54638
+2026/10/10 19:59:28.463144 New connection from 127.0.0.1:54647
+2026/10/10 19:59:28.479096 Player C64 PLAYER connected from Commodore 64
+2026/10/10 19:59:28.479130 Player joined: C64 PLAYER (ID 0) from Commodore 64 - 1/1 humans needed
+2026/10/10 19:59:28.479182 AI player added: Bot 1 (ID 1)
+2026/10/10 19:59:28.479210 Starting game in 1s
+2026/10/10 19:59:29.479817 Starting game with 2 players
+2026/10/10 19:59:37.085710 AI Bot 1 plays: [67]
+2026/10/10 19:59:46.322496 AI Bot 1 plays: [206]
+2026/10/10 19:59:54.380488 AI Bot 1 draws 2 cards
+2026/10/10 20:00:02.195140 AI Bot 1 plays: [74]
+2026/10/10 20:00:03.333901 AI Bot 1 plays: [77]
+2026/10/10 20:00:21.793438 AI Bot 1 plays: [198]
+2026/10/10 20:00:31.605733 AI Bot 1 plays: [11]
+2026/10/10 20:00:43.809728 AI Bot 1 draws 1 cards
+2026/10/10 20:00:52.049596 AI Bot 1 plays: [194]
+2026/10/10 20:00:59.445169 AI Bot 1 draws 1 cards
+2026/10/10 20:01:16.458436 AI Bot 1 draws 1 cards
+2026/10/10 20:01:25.539038 AI Bot 1 plays: [12]
+2026/10/10 20:01:34.049032 AI Bot 1 draws 1 cards
+2026/10/10 20:01:41.157539 AI Bot 1 plays: [5]
+2026/10/10 20:01:48.875626 AI Bot 1 plays: [133]
+2026/10/10 20:01:58.119250 AI Bot 1 plays: [142]
+2026/10/10 20:02:08.817557 AI Bot 1 plays: [70]
+2026/10/10 20:02:16.341660 AI Bot 1 plays: [75]
+2026/10/10 20:02:16.341722 Game finished
+2026/10/10 20:02:16.341771 Session closed: C64 PLAYER (player 0)
+2026/10/10 20:02:16.341783 Session closed: Bot 1 (player 1)

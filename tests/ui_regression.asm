@@ -144,10 +144,78 @@ test_start:
         sta $c40b
         lda SERIAL_RX_BUF+63
         sta $c40c
+        ; An online replacement can remove the card under the cursor. Exercise
+        ; the real parser, then Space/P, rather than repairing the test's state.
+        lda #6
+        sta zp_hand_count
+        lda #5
+        sta zp_cursor_pos
+        ldx #5
+.replacement:
+        lda replacement_hand,x
+        sta SERIAL_RX_BUF+PAYLOAD_START,x
+        dex
+        bpl .replacement
+        jsr rubp_parse_game_start
+        lda zp_hand_count
+        sta $c410
+        lda zp_cursor_pos
+        sta $c411
+        lda #' '
+        jsr key
+        jsr check_input
+        lda SELECTED_CARDS
+        sta $c412
+        lda SELECTED_CARDS+5
+        sta $c413
+        lda #'P'
+        jsr key
+        jsr check_input
+        lda SERIAL_TX_BUF+5
+        sta $c414
+        lda SERIAL_TX_BUF+PAYLOAD_START
+        sta $c415
+        lda SERIAL_TX_BUF+PAYLOAD_START+1
+        sta $c416
+        ; A replacement must retain a cursor that still points to a card.
+        lda #3
+        sta zp_cursor_pos
+        jsr rubp_parse_game_start
+        lda zp_cursor_pos
+        sta $c417
+        ; Drawing appends a card without moving a valid cursor.
+        lda #4
+        sta zp_cursor_pos
+        lda #1
+        sta SERIAL_RX_BUF+PAYLOAD_START
+        lda #6
+        sta SERIAL_RX_BUF+PAYLOAD_START+1
+        jsr rubp_parse_card_drawn
+        lda zp_hand_count
+        sta $c418
+        lda zp_cursor_pos
+        sta $c419
+        lda MY_HAND+5
+        sta $c41a
+        ; Going out leaves a safe cursor and no selectable phantom card.
+        lda #0
+        sta SERIAL_RX_BUF+PAYLOAD_START
+        jsr rubp_parse_game_start
+        lda zp_hand_count
+        sta $c41b
+        lda zp_cursor_pos
+        sta $c41c
+        lda #' '
+        jsr key
+        jsr check_input
+        lda SELECTED_CARDS
+        sta $c41d
         lda #$aa
         sta $c40f
 .halt:
         jmp .halt
+replacement_hand:
+        !byte 5,141,201,66,131,9
 key:
         sta $0277
         lda #1

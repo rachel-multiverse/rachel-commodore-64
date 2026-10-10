@@ -1,0 +1,151 @@
+{
+  "baseRevision": "5acf256dbd8d33643b689cd71c44fa67832f0268",
+  "sourceHashes": {
+    "Makefile": "2feea2eff1a1f2867d19aa3d5b0f1167803cc47b9f4d7a7e1e962ef5ede6d70c",
+    "conformance/.gitignore": "7f522eea8b7a73e62ff9576d78191b59a44f2b0c7cd6b7a614ad78156a0cfad2",
+    "conformance/README.md": "33d93f79e65d5d2beb5613a0dbfc672343c0219d59ba6e702863e3abcdfdc928",
+    "conformance/decoders.asm": "ca5824a8fa5535621b8216f91d72e0094dc0e646e3368e0e063ebcdf1923086d",
+    "conformance/encoders.asm": "c37c5f6cae1cc1a9fb0ac8be1109eb7dabc2fbeefb7896a885ed0ea083ce22d2",
+    "conformance/refresh-vectors.sh": "b8a3257b70009770d7e72a536d9d30ad2238723d95937ebed2395c03696a5154",
+    "conformance/rubp-messages-v1.json": "d7d87d041145a668830081d2952296851b4f6c95391052f3d16d534dab401d85",
+    "conformance/rubp-messages-v1.sha256": "fbeecd1f047d0a4ec7f1b8d5de637dda21d56ab131ba646d9d20d6bcb23b8608",
+    "conformance/run.py": "383769d7db616cbfddfd15a0dcc6fffbbb6dcf19184871f38c183e22cec0196f",
+    "src/autoplay.asm": "2ca78a812f628ee08a2e66f2cf3a29a84493b2df77dc0eb495120ecf4a890059",
+    "src/buffers.asm": "34bd019e06ca2854393a52804e7a94fcbb40cdf4835d6cc94889bfc8f2b2d3a4",
+    "src/connect.asm": "005bed0f1efe068b439884f3cc19110ce8d7a4ec5832d409ccc93cc96c43f89b",
+    "src/game.asm": "b3e5bc9a962369313b07ab6821741d0ea2bb6084e66331c3728c206c6f501e9f",
+    "src/input.asm": "0781b319bdded7828120999753b3ba55452ddf95dffa748ad8fe5443565380d4",
+    "src/loop.asm": "47ca74727f349f6e75c9f56134945b75fb8356d9f0fed435c8435e38986c6f79",
+    "src/main.asm": "4cd582e0e9cbcc90abd3f0867b3ae9fc10d4549a60758369c5e16cc429fb7194",
+    "src/modem.asm": "5ef1c9705799161a043fbd1e92c3cd0a3a3bb797677a76ffe087b51822479b87",
+    "src/reconnect.asm": "e352e5a86c90d864b9cb952ce4ac42da87044575da596d3d24550e1e4d62667b",
+    "src/rubp.asm": "bb6118cc1005c6bbac7146339ca4ad5fba133c15b51b0ad211f854d1f56cf158",
+    "src/screen.asm": "53e692979930d593b740fe4530153a853da48c856e901fd42cd0c95d1fb025c0",
+    "src/screen_defs.asm": "0f171b953fa5977c7374fd9e831e83be8ff5e7cfeacdc7a0bcd4d6babc964d23",
+    "src/serial.asm": "5d8674873043f3dc7a70c3735e3776b51b559747f2ad84dfdc6d2253214a14fa",
+    "src/serial_rx.asm": "4774af0ea451831ac859969249f4809f61d3d9562aaafef8ba58b0ff0c09488d",
+    "src/solo.asm": "ecdefaf3cec1679bff9c9f5b494095fe4d9b6c7bf46f9cac83f47de61feefb15",
+    "src/solo/ai.asm": "c25d3fd85b60a5f4fac619cb04188e1a14a22df17a6d080d8642c90f815d39fe",
+    "src/solo/deck.asm": "69fa14ffe44e1a00b892b07bb6aad6dfa422a0dca14e5b5cdf671f70bcc64d0d",
+    "src/solo/game.asm": "3dda8a49a17cc8e2b6229b76feac1cd2f14ede310af7d3aeea02320fc904e6c9",
+    "src/solo/hands.asm": "c02f4c3c253f3cceec186d4e03380de53eccdad52cedefcdf872f26706f6c0aa",
+    "src/solo/random.asm": "c5c367c2ad71457210f17949e7b4d6bec2f8b1aee12c9d713370fbb06e6f1c15",
+    "src/solo/rules.asm": "cfe347b1494f957576f41700247a153d49cd639b4a3f0e08b4fc2d0d07793e57",
+    "src/solo/selftest.asm": "c9c917d7485aae1a9f17f7ab5f6d183c03eaee8600e017394f77a136a8b594ed",
+    "src/solo/state.asm": "4e6dadfd1d8b97c7b6072b740d01ce15b1d1c8bf7ea2254bafc59d666def96b7",
+    "src/solo/turn.asm": "d890b87eeccc844a4a962bc2e76b8d9a51fb01e6d006971857a63d5c59a86e74",
+    "src/transport.asm": "c6a6b6212fea2e468802caf334ce13769eeb03716389a82f7f8fd23702d86d40",
+    "src/ultimate.asm": "a463b1d6f5a8bfa9d172b22ee384f7e795f721582877b988f4e157b880c7a5c8",
+    "src/zeropage.asm": "b9e11c33922f4330d5b7a2d2c264d0704453396e736b9df654f9e3430fcb2953",
+    "tests/autoplay_regression.py": "55e85025f16e06b5ad2ad2ea67e8907b638243e06cf917b93c5dad6f0b78785c",
+    "tests/full_game_e2e.py": "d3b0bddc5d674eee2cdbc5b363e02d7cef5c3b5d635c929ea3dda93046099238",
+    "tests/link_loss.py": "29b840857cd57921f0956f2ee8ddfa6f5bf12c507340b002a16596b968450631",
+    "tests/lobby_regression.py": "90c9262725a58bce1fcafee9a3f544a52f6766180a8a45fc6d2ad51f91c453b5",
+    "tests/production_ui.py": "9081ef90eea9319ed583166720036cec15a69239304ce171e3d0ed395aac3e20",
+    "tests/reconnect_e2e.py": "3857a5ef467e01c214f63f5327db809f952e150d50bbcb48b38810c6d32e33e7",
+    "tests/reconnect_regression.py": "2378c1c3241ea204230e1d5f2d198ba0d5d901a3b6f1616d1fd0a44bbb5daeeb",
+    "tests/solo_selftest.py": "3d87e8f1ee5df46b4d495d023d28fa016dfd31541cf8e070d09dc00828859abf",
+    "tests/test_conformance_pin.py": "14c277380b0420f110bdfed33becaea0fe95e4a16a11424d046c978ed944d2c5",
+    "tests/test_transport.py": "52d63867dacab1d3c36947adf676a59a75a9d2d964834748ba371b2f83ea69c8",
+    "tests/ui_regression.asm": "78eb2c64659f0c20472264a890eeb622164fd92886fca69b94ac618dd1334c89",
+    "tests/ui_regression.py": "16d4fded58effec413e72eeb81794cf01fdb3bb64012461ce820a77f5e042803"
+  },
+  "productionPrgSha256": "3cdacb74c611a36f45254b3197e03ed862c7d67e3d985d3bd5f07cbf5d95e92f",
+  "productionBytes": 7740,
+  "flags": "E2E_AUTOPLAY = 0\nSOLO_SELFTEST = 0\n",
+  "emulatorAndHost": {
+    "emulatorPid": 54888,
+    "started": 1791658757.369901,
+    "boundSeconds": 1200,
+    "artifacts": {
+      "/Users/stevehill/Projects/198x/Emu198x/emu198x/target/release/emu198x-c64": "8721f3e3736a512b4b059f4757e2cff0dfaad5c034e8cde5c44e9c3f854392df",
+      "/tmp/rachel-android-crossplay-menu/native-retry/seed-42/rachel-server": "3d0c714817703741b370c9a0b24235911e7bd733553ad266e0671b00810c325d",
+      "/tmp/rachel-c64-production-keyboard/repaired-build/rachel.prg": "3cdacb74c611a36f45254b3197e03ed862c7d67e3d985d3bd5f07cbf5d95e92f"
+    },
+    "roms": {
+      "1571.rom": "1fd73459b54a72a737609a879c283645acc37835de2c121633153db9fac81d45",
+      "basic_generic.rom": "54a1464b4b27c9dc61bbd62a818fdd12ec99af9089111005a5add0ad0e6bd5ec",
+      "basic.rom": "89878cea0a268734696de11c4bae593eaaa506465d2029d619c0e0cbccdfa62d",
+      "chargen_openroms.rom": "5e3451466841b93df7e01e4b635b07b8d8633351bae483b1961d96b3131186e7",
+      "kernal_generic.rom": "88e86ed3d0c710edab8f90ad146faa8de1ead11f43494b176c7b54724ca721c6",
+      "chargen.rom": "fd0d53b8480e86163ac98998976c72cc58d5dd8eb824ed7b829774e74213b420",
+      "kernal.rom": "83c60d47047d7beab8e5b7bf6f67f80daa088b7a6a27de0d7e016f6484042721",
+      "1581.rom": "8f689277f36be357f5f105e6e606c35c42e73c581cdeec14b58f31850dfbcfcb",
+      "1541.rom": "326c289c38753323d7e8167897447cf61ef35189d82eb8d75210ece949adda7c"
+    }
+  },
+  "scenario": {
+    "seed": 2,
+    "c64Seat": 0,
+    "botSeat": 1,
+    "finalTurn": 37,
+    "survivorSeat": 0,
+    "finalHand": [
+      132,
+      2,
+      10,
+      134
+    ],
+    "input": "Production keyboard via emulator tools",
+    "returnedToMenu": true,
+    "reconnectTokenCleared": true
+  },
+  "retained": {
+    "red.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/regression-red/check.log",
+      "sha256": "ae7c60c380c6f510146654174faa936c2dbde323cbbcd3f67d877803777d418b"
+    },
+    "build.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/regression-green/00.log",
+      "sha256": "79698ff67bd845122184121355b86364d285d1463e6ee44be80cc7eec8600506"
+    },
+    "ui.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/regression-green/01.log",
+      "sha256": "4c8e09e1290d487810a444cfb01fcce001b0c79432c75f2f1aa7b0b576e494b2"
+    },
+    "conformance.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/regression-green/02.log",
+      "sha256": "6c521b2a194110629caf068be42325b7a8730759d09169318dadd1eab61d741f"
+    },
+    "reconnect.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/regression-green/03.log",
+      "sha256": "57a839920e3aba2d134d39b8cc2ecac12b164081b3dfd6af163843096a573b1d"
+    },
+    "baseline-cursor.png": {
+      "original": "/tmp/rachel-c64-production-keyboard/game/07-after-ace.png",
+      "sha256": "d7b3b91215129fe6adfa5727d4ef41e307a4a1bb3b97967b203d57a1a9632451"
+    },
+    "fixed-cursor.png": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/05-after-ace.png",
+      "sha256": "64b51cb978979287bded0ef9341c8114c4a03c32687e8a9879284cf4aa4bb888"
+    },
+    "final-result.png": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/23-final-result.png",
+      "sha256": "eae0afe405ce564198e965bfb83a450fa908402f2617be81cdf2805c55ec1678"
+    },
+    "returned-menu.png": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/24-returned-menu.png",
+      "sha256": "54625ce67d928999759ecfa37122a2a12a82aa42202e26a98d983c52c001a7ef"
+    },
+    "server.log": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/server.log",
+      "sha256": "de640b1b9657c9f6e98006140712729a516e19c28d853f8d5f16a4289e4c9567"
+    },
+    "cleanup.json": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/cleanup.json",
+      "sha256": "0a6d27ab6df329f3d1949dd20016f46c5eda0ab9cdf2c0d500bfe1b7dbcf02a4"
+    },
+    "session-cleared.json": {
+      "original": "/tmp/rachel-c64-production-keyboard/repaired-complete/session-cleared.json",
+      "sha256": "8f48ed3597e31d66bda122d2ded5903ab4ae5ca3460238ac4fdd88271faa51bd"
+    }
+  },
+  "localRawEvidence": "/tmp/rachel-c64-production-keyboard",
+  "limits": [
+    "PAL Ultimate emulation",
+    "No physical hardware or user-port game",
+    "No native mobile peer in this scenario",
+    "Left named key rejected by emulator; successful run uses Right wraparound",
+    "No claim for unexercised controls or all deals"
+  ]
+}

@@ -512,6 +512,14 @@ rubp_parse_cards:
 
 .copy_done:
         stx zp_hand_count       ; Update hand count
+        ; A replacement can remove the card under the cursor. Match the solo
+        ; publisher: preserve valid positions and reset removed ones to zero.
+        lda zp_cursor_pos
+        cmp zp_hand_count
+        bcc .cursor_valid
+        lda #0
+        sta zp_cursor_pos
+.cursor_valid:
         rts
 
 ; Convenience wrappers

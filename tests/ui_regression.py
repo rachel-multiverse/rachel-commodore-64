@@ -14,7 +14,7 @@ data=bytearray((OUT/'test.prg').read_bytes())
 data[17:20]=bytes([0x4c,entry&255,entry>>8])
 (OUT/'test.prg').write_bytes(data)
 script=[{'action':'run_frames','frames':200},{'action':'type_string','text':'RUN\n','hold_frames':2,'settle_frames':40},{'action':'run_frames','frames':300}]
-script += [{'action':'memory_read','addr':a,'len':n} for a,n in [(0xc400,16)]+[(a,256) for a in range(0x4000,0x5000,256)]]
+script += [{'action':'memory_read','addr':a,'len':n} for a,n in [(0xc400,32)]+[(a,256) for a in range(0x4000,0x5000,256)]]
 (OUT/'session.json').write_text(json.dumps(script))
 r=subprocess.run([str(EMU/'target/release/emu198x-c64'),'--headless','--rom-dir',str(Path.home()/'.emu198x/roms/commodore-c64'),'--load',str(OUT/'test.prg'),'--script',str(OUT/'session.json'),'--screenshot',str(OUT/'final.png')],capture_output=True,text=True,timeout=120)
 (OUT/'emulator.json').write_text(r.stdout+r.stderr)
@@ -27,6 +27,10 @@ assert state[11:13]==[0,63], 'user-port frame index was corrupted'
 assert state[9:11]==[1,0], 'user-port readiness convention reversed'
 assert state[8]==1, 'lobby did not return after link loss'
 assert state[:8]==[1,1,0x04,0x05,1,0,2,2], f'input regression: {state}'
+assert state[17]<state[16], f'cursor outside replacement hand: cursor={state[17]}, count={state[16]}'
+assert state[16:23]==[5,0,1,0,0x04,1,141], f'replacement Space/P selected a phantom card: {state[16:23]}'
+assert state[23:27]==[3,6,4,6], f'valid cursor moved during replace/append: {state[23:27]}'
+assert state[27:30]==[0,0,0], f'empty replacement allows phantom selection: {state[27:30]}'
 def row(screen,n):
  return ''.join(chr((c&127)+64 if (c&127)<32 else c&127) for c in screen[n*40:n*40+40])
 assert row(full,0)[12:23]=='RACHEL V1.0',row(full,0)
@@ -39,4 +43,4 @@ assert 'DRAW' not in row(short,10),row(short,10)
 assert 'YOU FINISHED LAST' in row(last,12),row(last,12)
 assert 'YOU WENT OUT' in row(out,12),row(out,12)
 assert 'YOUR TURN' not in row(out,24),row(out,24)
-print('UI regression passed: layout, 32-card hand, stale clearing, keyboard, Ace suit and results')
+print('UI regression passed: layout, 32-card hand, stale clearing, keyboard, hand replacement/append, Ace suit and results')

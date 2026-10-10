@@ -1,5 +1,22 @@
 # C64 verification status
 
+## Production online keyboard game, 10 October 2026
+
+A real keyboard game exposed an out-of-range cursor after the last displayed
+card was played. Online hand updates now bound the cursor using the existing
+solo convention. The regression fails on the old parser and passes after the
+repair; production build, transport/pin checks, ACME parity, codec conformance
+and reconnect hydration also pass.
+
+The repaired production PRG completes a 37-turn seed-2 game against one local
+Go bot. It shows the correct losing result, returns to the actual chooser on
+Space, and clears its reconnect token and game/hand state. Both test switches
+are zero. [Source, artifact, red/green and original-screen evidence](verification/2026-10-10-production-keyboard/)
+retain the scope: PAL Ultimate emulation, Right-key wraparound, no physical
+hardware or native mobile peer. The emulator rejects its advertised Left key;
+that stopped attempt is retained separately from the passing repeat. Earlier
+three-way games below still identify their original autoplay artifact.
+
 ## Broader autoplay scenarios, 7 October 2026
 
 The test-only move policy no longer treats an ordinary Ace as wild and no
